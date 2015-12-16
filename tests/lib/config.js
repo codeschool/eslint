@@ -14,6 +14,7 @@ var assert = require("chai").assert,
     fs = require("fs"),
     os = require("os"),
     Config = require("../../lib/config"),
+    environments = require("../../conf/environments"),
     sinon = require("sinon"),
     proxyquire = require("proxyquire");
 
@@ -36,8 +37,8 @@ function assertConfigsEqual(actual, expected) {
         assert.deepEqual(actual.env, expected.env);
     }
 
-    if (actual.ecmaFeatures && expected.ecmaFeatures) {
-        assert.deepEqual(actual.ecmaFeatures, expected.ecmaFeatures);
+    if (actual.parserOptions && expected.parserOptions) {
+        assert.deepEqual(actual.parserOptions, expected.parserOptions);
     }
 
     if (actual.globals && expected.globals) {
@@ -124,14 +125,40 @@ describe("Config", function() {
             assert.lengthOf(actual, 0);
         });
 
-        it("should return the path when a package.json file is found", function() {
+        it("should return package.json only when no other config files are found", function() {
             var configHelper = new Config(),
-                expected = getFixturePath("broken", "package.json"),
+                expected0 = getFixturePath("packagejson", "subdir", "package.json"),
+                expected1 = getFixturePath("packagejson", ".eslintrc"),
+                actual = configHelper.findLocalConfigFiles(getFixturePath("packagejson", "subdir"));
+
+            assert.isArray(actual);
+            assert.lengthOf(actual, 2);
+            assert.equal(actual[0], expected0);
+            assert.equal(actual[1], expected1);
+        });
+
+        it("should return the only one config file even if there are multiple found", function() {
+            var configHelper = new Config(),
+                expected = getFixturePath("broken", ".eslintrc"),
 
                 // The first element of the array is the .eslintrc in the same directory.
-                actual = configHelper.findLocalConfigFiles(getFixturePath("broken"))[1];
+                actual = configHelper.findLocalConfigFiles(getFixturePath("broken"));
 
+            assert.equal(actual.length, 1);
             assert.equal(actual, expected);
+        });
+
+        it("should return all possible files when multiple are found", function() {
+            var configHelper = new Config(),
+                expected = [
+                    getFixturePath("fileexts/subdir/subsubdir/", ".eslintrc.json"),
+                    getFixturePath("fileexts/subdir/", ".eslintrc.yml"),
+                    getFixturePath("fileexts", ".eslintrc.js")
+                ],
+
+                actual = configHelper.findLocalConfigFiles(getFixturePath("fileexts/subdir/subsubdir"));
+
+            assert.deepEqual(actual, expected);
         });
 
         it("should return an empty array when a package.json file is not found", function() {
@@ -146,7 +173,7 @@ describe("Config", function() {
     describe("getConfig()", function() {
 
         it("should return the project config when called in current working directory", function() {
-            var configHelper = new Config({}),
+            var configHelper = new Config({cwd: process.cwd()}),
                 actual = configHelper.getConfig();
 
             assert.equal(actual.rules.strict[1], "global");
@@ -157,7 +184,7 @@ describe("Config", function() {
             var firstpath = path.resolve(__dirname, "..", "fixtures", "configurations", "single-quotes", "subdir", ".eslintrc");
             var secondpath = path.resolve(__dirname, "..", "fixtures", "configurations", "single-quotes", ".eslintrc");
 
-            var configHelper = new Config(),
+            var configHelper = new Config({cwd: process.cwd()}),
                 config;
 
             config = configHelper.getConfig(firstpath);
@@ -169,7 +196,7 @@ describe("Config", function() {
 
         it("should return a default config when an invalid path is given", function() {
             var configPath = path.resolve(__dirname, "..", "fixtures", "configurations", "foobaz", ".eslintrc");
-            var configHelper = new Config();
+            var configHelper = new Config({cwd: process.cwd()});
 
             sandbox.stub(fs, "readdirSync").throws(new Error());
 
@@ -178,7 +205,7 @@ describe("Config", function() {
 
         it("should throw error when a configuration file doesn't exist", function() {
             var configPath = path.resolve(__dirname, "..", "fixtures", "configurations", ".eslintrc");
-            var configHelper = new Config();
+            var configHelper = new Config({cwd: process.cwd()});
 
             sandbox.stub(fs, "readFileSync").throws(new Error());
 
@@ -190,7 +217,7 @@ describe("Config", function() {
 
         it("should throw error when a configuration file is not require-able", function() {
             var configPath = ".eslintrc";
-            var configHelper = new Config();
+            var configHelper = new Config({cwd: process.cwd()});
 
             sandbox.stub(fs, "readFileSync").throws(new Error());
 
@@ -202,7 +229,7 @@ describe("Config", function() {
 
         it("should cache config when the same directory is passed twice", function() {
             var configPath = path.resolve(__dirname, "..", "fixtures", "configurations", "single-quotes", ".eslintrc");
-            var configHelper = new Config();
+            var configHelper = new Config({cwd: process.cwd()});
 
             sandbox.spy(configHelper, "findLocalConfigFiles");
 
@@ -236,7 +263,28 @@ describe("Config", function() {
             assert.equal(noUndef, 2);
         });
 
+
         // Configuration hierarchy ---------------------------------------------
+
+        // https://github.com/eslint/eslint/issues/3915
+        it("should correctly merge environment settings", function() {
+            var configHelper = new Config({ useEslintrc: true, cwd: process.cwd() }),
+                file = getFixturePath("envs", "sub", "foo.js"),
+                expected = {
+                    rules: {},
+                    env: {
+                        browser: true,
+                        node: false
+                    },
+                    ecmaFeatures: {
+                        globalReturn: false
+                    },
+                    globals: environments.browser.globals
+                },
+                actual = configHelper.getConfig(file);
+
+            assertConfigsEqual(actual, expected);
+        });
 
         // Default configuration - blank
         it("should return a blank config when using no .eslintrc", function() {
@@ -277,6 +325,8 @@ describe("Config", function() {
         });
 
         it("should return a modified config when baseConfig is set to an object and no .eslintrc", function() {
+
+
             var configHelper = new Config({
                     baseConfig: {
                         env: {
@@ -303,13 +353,16 @@ describe("Config", function() {
         });
 
         it("should return a modified config when baseConfig is set to an object with extend and no .eslintrc", function() {
-            var StubbedConfig = proxyquire("../../lib/config", {
+            var configDeps = {};
+            configDeps["./config/config-file"] = proxyquire("../../lib/config/config-file", {
                 "eslint-config-foo": {
                     rules: {
                         eqeqeq: [2, "smart"]
                     }
                 }
             });
+
+            var StubbedConfig = proxyquire("../../lib/config", configDeps);
 
             var configHelper = new StubbedConfig({
                     baseConfig: {
@@ -376,7 +429,7 @@ describe("Config", function() {
         // Project configuration - second level .eslintrc
         it("should merge configs when local .eslintrc overrides parent .eslintrc", function() {
 
-            var configHelper = new Config({}),
+            var configHelper = new Config({cwd: process.cwd()}),
                 file = getFixturePath("broken", "subbroken", "console-wrong-quotes.js"),
                 expected = {
                     env: {
@@ -397,7 +450,7 @@ describe("Config", function() {
         // Project configuration - third level .eslintrc
         it("should merge configs when local .eslintrc overrides parent and grandparent .eslintrc", function() {
 
-            var configHelper = new Config({}),
+            var configHelper = new Config({cwd: process.cwd()}),
                 file = getFixturePath("broken", "subbroken", "subsubbroken", "console-wrong-quotes.js"),
                 expected = {
                     env: {
@@ -417,7 +470,7 @@ describe("Config", function() {
 
         // Project configuration - root set in second level .eslintrc
         it("should not return configurations in parents of config with root:true", function() {
-            var configHelper = new Config({}),
+            var configHelper = new Config({cwd: process.cwd()}),
                 file = getFixturePath("root-true", "parent", "root", "wrong-semi.js"),
                 expected = {
                     rules: {
@@ -433,7 +486,8 @@ describe("Config", function() {
         it("should merge command line config when config file adds to local .eslintrc", function() {
 
             var configHelper = new Config({
-                    configFile: getFixturePath("broken", "add-conf.yaml")
+                    configFile: getFixturePath("broken", "add-conf.yaml"),
+                    cwd: process.cwd()
                 }),
                 file = getFixturePath("broken", "console-wrong-quotes.js"),
                 expected = {
@@ -456,7 +510,8 @@ describe("Config", function() {
         it("should merge command line config when config file overrides local .eslintrc", function() {
 
             var configHelper = new Config({
-                    configFile: getFixturePath("broken", "override-conf.yaml")
+                    configFile: getFixturePath("broken", "override-conf.yaml"),
+                    cwd: process.cwd()
                 }),
                 file = getFixturePath("broken", "console-wrong-quotes.js"),
                 expected = {
@@ -478,7 +533,8 @@ describe("Config", function() {
         it("should merge command line config when config file adds to local and parent .eslintrc", function() {
 
             var configHelper = new Config({
-                    configFile: getFixturePath("broken", "add-conf.yaml")
+                    configFile: getFixturePath("broken", "add-conf.yaml"),
+                    cwd: process.cwd()
                 }),
                 file = getFixturePath("broken", "subbroken", "console-wrong-quotes.js"),
                 expected = {
@@ -502,7 +558,8 @@ describe("Config", function() {
         it("should merge command line config when config file overrides local and parent .eslintrc", function() {
 
             var configHelper = new Config({
-                    configFile: getFixturePath("broken", "override-conf.yaml")
+                    configFile: getFixturePath("broken", "override-conf.yaml"),
+                    cwd: process.cwd()
                 }),
                 file = getFixturePath("broken", "subbroken", "console-wrong-quotes.js"),
                 expected = {
@@ -528,7 +585,8 @@ describe("Config", function() {
                     configFile: getFixturePath("broken", "override-conf.yaml"),
                     rules: {
                         quotes: [1, "double"]
-                    }
+                    },
+                    cwd: process.cwd()
                 }),
                 file = getFixturePath("broken", "console-wrong-quotes.js"),
                 expected = {
@@ -550,7 +608,8 @@ describe("Config", function() {
         it("should merge command line plugin with local .eslintrc", function() {
 
             var configHelper = new Config({
-                    plugins: [ "another-plugin" ]
+                    plugins: [ "another-plugin" ],
+                    cwd: process.cwd()
                 }),
                 file = getFixturePath("broken", "plugins", "console-wrong-quotes.js"),
                 expected = {
@@ -563,6 +622,27 @@ describe("Config", function() {
 
             assertConfigsEqual(actual, expected);
         });
+
+
+        it("should merge multiple different config file formats", function() {
+
+            var configHelper = new Config({cwd: process.cwd()}),
+                file = getFixturePath("fileexts/subdir/subsubdir/foo.js"),
+                expected = {
+                    env: {
+                        browser: true
+                    },
+                    rules: {
+                        semi: [2, "always"],
+                        eqeqeq: 2
+                    }
+                },
+                actual = configHelper.getConfig(file);
+
+            assertConfigsEqual(actual, expected);
+        });
+
+
 
         it("should load user config globals", function() {
             var expected,
@@ -594,13 +674,18 @@ describe("Config", function() {
         });
 
         it("should load a sharable config as a command line config", function() {
-            var StubbedConfig = proxyquire("../../lib/config", {
+
+            var configDeps = {};
+            configDeps["./config/config-file"] = proxyquire("../../lib/config/config-file", {
                 "@test/eslint-config": {
                     rules: {
                         "no-var": 2
                     }
                 }
             });
+
+            var StubbedConfig = proxyquire("../../lib/config", configDeps);
+
             var configHelper = new StubbedConfig({
                     useEslintrc: false,
                     configFile: "@test"
@@ -621,13 +706,13 @@ describe("Config", function() {
             configPath = path.resolve(__dirname, "..", "fixtures", "environments", "fake.yaml");
 
             assert.throw(function() {
-                new Config({ configFile: configPath, useEslintrc: false }); // eslint-disable-line no-new
+                new Config({ configFile: configPath, useEslintrc: false, cwd: process.cwd() }); // eslint-disable-line no-new
             });
         });
 
         it("should gracefully handle empty files", function() {
             var configPath = path.resolve(__dirname, "..", "fixtures", "configurations", "env-node.json"),
-                configHelper = new Config({configFile: configPath});
+                configHelper = new Config({configFile: configPath, cwd: process.cwd()});
             configHelper.getConfig(path.resolve(__dirname, "..", "fixtures", "configurations", "empty", "empty.json"));
         });
 
@@ -649,13 +734,16 @@ describe("Config", function() {
         // package extends
         it("should extend package configuration", function() {
 
-            var StubbedConfig = proxyquire("../../lib/config", {
+            var configDeps = {};
+            configDeps["./config/config-file"] = proxyquire("../../lib/config/config-file", {
                 "eslint-config-foo": {
                     rules: {
                         eqeqeq: [2, "smart"]
                     }
                 }
             });
+
+            var StubbedConfig = proxyquire("../../lib/config", configDeps);
 
             var configPath = path.resolve(__dirname, "../fixtures/config-extends/package/.eslintrc"),
                 configHelper = new StubbedConfig({ useEslintrc: false, configFile: configPath }),
@@ -692,7 +780,9 @@ describe("Config", function() {
                     eqeqeq: [2, "smart"]
                 }
             };
-            var StubbedConfig = proxyquire("../../lib/config", stubSetup);
+            var configDeps = {};
+            configDeps["./config/config-file"] = proxyquire("../../lib/config/config-file", stubSetup);
+            var StubbedConfig = proxyquire("../../lib/config", configDeps);
 
             var configPath = path.resolve(__dirname, "../fixtures/config-extends/js/.eslintrc"),
                 configHelper = new StubbedConfig({ useEslintrc: false, configFile: configPath }),
@@ -707,13 +797,16 @@ describe("Config", function() {
 
         it("should extend package configuration without prefix", function() {
 
-            var StubbedConfig = proxyquire("../../lib/config", {
+            var configDeps = {};
+            configDeps["./config/config-file"] = proxyquire("../../lib/config/config-file", {
                 "eslint-config-foo": {
                     rules: {
                         eqeqeq: [2, "smart"]
                     }
                 }
             });
+
+            var StubbedConfig = proxyquire("../../lib/config", configDeps);
 
             var configPath = path.resolve(__dirname, "../fixtures/config-extends/package2/.eslintrc"),
                 configHelper = new StubbedConfig({ useEslintrc: false, configFile: configPath }),
@@ -745,13 +838,16 @@ describe("Config", function() {
 
         it("should extend scoped package configuration", function() {
 
-            var StubbedConfig = proxyquire("../../lib/config", {
+            var configDeps = {};
+            configDeps["./config/config-file"] = proxyquire("../../lib/config/config-file", {
                 "@scope/eslint-config-foo": {
                     rules: {
                         eqeqeq: 2
                     }
                 }
             });
+
+            var StubbedConfig = proxyquire("../../lib/config", configDeps);
 
             var configPath = path.resolve(__dirname, "../fixtures/config-extends/scoped-package/.eslintrc"),
                 configHelper = new StubbedConfig({ useEslintrc: false, configFile: configPath }),
@@ -766,13 +862,16 @@ describe("Config", function() {
 
         it("should extend scoped package configuration without prefix", function() {
 
-            var StubbedConfig = proxyquire("../../lib/config", {
+            var configDeps = {};
+            configDeps["./config/config-file"] = proxyquire("../../lib/config/config-file", {
                 "@scope/eslint-config-foo": {
                     rules: {
                         eqeqeq: 2
                     }
                 }
             });
+
+            var StubbedConfig = proxyquire("../../lib/config", configDeps);
 
             var configPath = path.resolve(__dirname, "../fixtures/config-extends/scoped-package2/.eslintrc"),
                 configHelper = new StubbedConfig({ useEslintrc: false, configFile: configPath }),
@@ -787,13 +886,16 @@ describe("Config", function() {
 
         it("should not modify a scoped package named 'eslint-config'", function() {
 
-            var StubbedConfig = proxyquire("../../lib/config", {
+            var configDeps = {};
+            configDeps["./config/config-file"] = proxyquire("../../lib/config/config-file", {
                 "@scope/eslint-config": {
                     rules: {
                         eqeqeq: 2
                     }
                 }
             });
+
+            var StubbedConfig = proxyquire("../../lib/config", configDeps);
 
             var configPath = path.resolve(__dirname, "../fixtures/config-extends/scoped-package4/.eslintrc"),
                 configHelper = new StubbedConfig({ useEslintrc: false, configFile: configPath }),
@@ -808,13 +910,16 @@ describe("Config", function() {
 
         it("should extend a scope with a slash to '@scope/eslint-config'", function() {
 
-            var StubbedConfig = proxyquire("../../lib/config", {
+            var configDeps = {};
+            configDeps["./config/config-file"] = proxyquire("../../lib/config/config-file", {
                 "@scope/eslint-config": {
                     rules: {
                         eqeqeq: 2
                     }
                 }
             });
+
+            var StubbedConfig = proxyquire("../../lib/config", configDeps);
 
             var configPath = path.resolve(__dirname, "../fixtures/config-extends/scoped-package5/.eslintrc"),
                 configHelper = new StubbedConfig({ useEslintrc: false, configFile: configPath }),
@@ -829,13 +934,16 @@ describe("Config", function() {
 
         it("should extend a lone scope to '@scope/eslint-config'", function() {
 
-            var StubbedConfig = proxyquire("../../lib/config", {
+            var configDeps = {};
+            configDeps["./config/config-file"] = proxyquire("../../lib/config/config-file", {
                 "@scope/eslint-config": {
                     rules: {
                         eqeqeq: 2
                     }
                 }
             });
+
+            var StubbedConfig = proxyquire("../../lib/config", configDeps);
 
             var configPath = path.resolve(__dirname, "../fixtures/config-extends/scoped-package6/.eslintrc"),
                 configHelper = new StubbedConfig({ useEslintrc: false, configFile: configPath }),
@@ -850,13 +958,16 @@ describe("Config", function() {
 
         it("should still prefix a name prefix of 'eslint-config' without a dash, with a dash", function() {
 
-            var StubbedConfig = proxyquire("../../lib/config", {
+            var configDeps = {};
+            configDeps["./config/config-file"] = proxyquire("../../lib/config/config-file", {
                 "@scope/eslint-config-eslint-configfoo": {
                     rules: {
                         eqeqeq: 2
                     }
                 }
             });
+
+            var StubbedConfig = proxyquire("../../lib/config", configDeps);
 
             var configPath = path.resolve(__dirname, "../fixtures/config-extends/scoped-package7/.eslintrc"),
                 configHelper = new StubbedConfig({ useEslintrc: false, configFile: configPath }),
@@ -871,7 +982,8 @@ describe("Config", function() {
 
         it("should extend package sub-configuration without prefix", function() {
 
-            var StubbedConfig = proxyquire("../../lib/config", {
+            var configDeps = {};
+            configDeps["./config/config-file"] = proxyquire("../../lib/config/config-file", {
                 "eslint-config-foo/bar": {
                     rules: {
                         eqeqeq: 2
@@ -879,8 +991,10 @@ describe("Config", function() {
                 }
             });
 
+            var StubbedConfig = proxyquire("../../lib/config", configDeps);
+
             var configPath = path.resolve(__dirname, "../fixtures/config-extends/package3/.eslintrc"),
-                configHelper = new StubbedConfig({ useEslintrc: true, configFile: configPath }),
+                configHelper = new StubbedConfig({ useEslintrc: true, configFile: configPath, cwd: process.cwd() }),
                 expected = {
                     rules: { "quotes": [2, "double"], "eqeqeq": 2, "valid-jsdoc": 0 },
                     env: { "browser": false }
@@ -900,7 +1014,8 @@ describe("Config", function() {
 
         it("should extend scoped package sub-configuration without prefix", function() {
 
-            var StubbedConfig = proxyquire("../../lib/config", {
+            var configDeps = {};
+            configDeps["./config/config-file"] = proxyquire("../../lib/config/config-file", {
                 "@scope/eslint-config-foo/bar": {
                     rules: {
                         eqeqeq: 2
@@ -908,8 +1023,10 @@ describe("Config", function() {
                 }
             });
 
+            var StubbedConfig = proxyquire("../../lib/config", configDeps);
+
             var configPath = path.resolve(__dirname, "../fixtures/config-extends/scoped-package3/.eslintrc"),
-                configHelper = new StubbedConfig({ useEslintrc: true, configFile: configPath }),
+                configHelper = new StubbedConfig({ useEslintrc: true, configFile: configPath, cwd: process.cwd() }),
                 expected = {
                     rules: { "quotes": [2, "double"], "eqeqeq": 2, "valid-jsdoc": 0 },
                     env: { "browser": false }
@@ -929,7 +1046,8 @@ describe("Config", function() {
 
         it("should extend package configuration with sub directories", function() {
 
-            var StubbedConfig = proxyquire("../../lib/config", {
+            var configDeps = {};
+            configDeps["./config/config-file"] = proxyquire("../../lib/config/config-file", {
                 "eslint-config-foo": {
                     rules: {
                         "eqeqeq": 2
@@ -937,8 +1055,10 @@ describe("Config", function() {
                 }
             });
 
+            var StubbedConfig = proxyquire("../../lib/config", configDeps);
+
             var configPath = path.resolve(__dirname, "../fixtures/config-extends/package2/.eslintrc"),
-                configHelper = new StubbedConfig({ useEslintrc: true, configFile: configPath }),
+                configHelper = new StubbedConfig({ useEslintrc: true, configFile: configPath, cwd: process.cwd() }),
                 expected = {
                     rules: { "quotes": [2, "double"], "eqeqeq": 2, "valid-jsdoc": 0 },
                     env: { "browser": false }
@@ -960,7 +1080,7 @@ describe("Config", function() {
 
         it("should extend package configuration from package.json file", function() {
             var configPath = path.resolve(__dirname, "../fixtures/config-extends/package.json"),
-                configHelper = new Config({ useEslintrc: true }),
+                configHelper = new Config({ useEslintrc: true, cwd: process.cwd() }),
                 expected = {
                     rules: { "quotes": [1, "single"], "yoda": 2 },
                     env: { "browser": true }
@@ -1029,7 +1149,7 @@ describe("Config", function() {
 
                 StubbedConfig = proxyquire("../../lib/config", requireStubs);
 
-                var configHelper = new StubbedConfig({}),
+                var configHelper = new StubbedConfig({ cwd: process.cwd() }),
                     file = getFixturePath("broken", "plugins", "console-wrong-quotes.js"),
                     expected = {
                         env: {
@@ -1052,7 +1172,7 @@ describe("Config", function() {
 
                 StubbedConfig = proxyquire("../../lib/config", requireStubs);
 
-                var configHelper = new StubbedConfig({}),
+                var configHelper = new StubbedConfig({ cwd: process.cwd() }),
                     file = getFixturePath("broken", "plugins", "console-wrong-quotes.js"),
                     expected = {
                         env: {
@@ -1075,7 +1195,7 @@ describe("Config", function() {
 
                 StubbedConfig = proxyquire("../../lib/config", requireStubs);
 
-                var configHelper = new StubbedConfig({}),
+                var configHelper = new StubbedConfig({ cwd: process.cwd() }),
                     file = getFixturePath("broken", "plugins2", "console-wrong-quotes.js"),
                     expected = {
                         env: {
@@ -1099,7 +1219,7 @@ describe("Config", function() {
 
                 StubbedConfig = proxyquire("../../lib/config", requireStubs);
 
-                var configHelper = new StubbedConfig({}),
+                var configHelper = new StubbedConfig({ cwd: process.cwd() }),
                     file = getFixturePath("broken", "plugins", "console-wrong-quotes.js"),
                     expected = {
                         env: {
@@ -1116,11 +1236,16 @@ describe("Config", function() {
             });
 
             it("should not clobber config objects when loading shared configs", function() {
-                requireStubs[exampleConfigName] = { rules: { "example-rule": 2 } };
 
-                StubbedConfig = proxyquire("../../lib/config", requireStubs);
+                var configFileDeps = {};
+                configFileDeps[exampleConfigName] = { rules: { "example-rule": 2 } };
 
-                var configHelper = new StubbedConfig({}),
+                var configDeps = {};
+                configDeps["./config/config-file"] = proxyquire("../../lib/config/config-file", configFileDeps);
+
+                StubbedConfig = proxyquire("../../lib/config", configDeps);
+
+                var configHelper = new StubbedConfig({ cwd: process.cwd() }),
                     file1 = getFixturePath("shared", "a", "index.js"),
                     file2 = getFixturePath("shared", "b", "index.js");
 
@@ -1135,13 +1260,13 @@ describe("Config", function() {
         });
 
         describe("with env in a child configuration file", function() {
-            it("should overwrite ecmaFeatures of the parent with env of the child", function() {
-                var config = new Config();
+            it("should overwrite parserOptions of the parent with env of the child", function() {
+                var config = new Config({ cwd: process.cwd() });
                 var targetPath = getFixturePath("overwrite-ecmaFeatures", "child", "foo.js");
                 var expected = {
                     rules: {},
                     env: {commonjs: true},
-                    ecmaFeatures: {globalReturn: true}
+                    parserOptions: {ecmaFeatures: {globalReturn: true}}
                 };
                 var actual = config.getConfig(targetPath);
 
@@ -1169,10 +1294,10 @@ describe("Config", function() {
 
                 var StubbedConfig = proxyquire("../../lib/config", { "user-home": homePath });
 
-                var config = new StubbedConfig(),
+                var config = new StubbedConfig({ cwd: process.cwd() }),
                     actual = config.getConfig(filePath),
                     expected = {
-                        ecmaFeatures: {},
+                        parserOptions: {},
                         env: {},
                         globals: {},
                         parser: void 0,
@@ -1193,10 +1318,10 @@ describe("Config", function() {
 
                 var StubbedConfig = proxyquire("../../lib/config", { "user-home": homePath });
 
-                var config = new StubbedConfig(),
+                var config = new StubbedConfig({ cwd: process.cwd() }),
                     actual = config.getConfig(filePath),
                     expected = {
-                        ecmaFeatures: {},
+                        parserOptions: {},
                         env: {},
                         globals: {},
                         parser: void 0,
@@ -1217,10 +1342,10 @@ describe("Config", function() {
 
                 var StubbedConfig = proxyquire("../../lib/config", { "user-home": homePath });
 
-                var config = new StubbedConfig(),
+                var config = new StubbedConfig({ cwd: process.cwd() }),
                     actual = config.getConfig(filePath),
                     expected = {
-                        ecmaFeatures: {},
+                        parserOptions: {},
                         env: {},
                         globals: {},
                         parser: void 0,
@@ -1238,10 +1363,10 @@ describe("Config", function() {
 
                 getCwd.returns(projectPath);
 
-                var config = new StubbedConfig(),
+                var config = new StubbedConfig({ cwd: process.cwd() }),
                     actual = config.getConfig(filePath),
                     expected = {
-                        ecmaFeatures: {},
+                        parserOptions: {},
                         env: {},
                         globals: {},
                         parser: void 0,
