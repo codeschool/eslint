@@ -2,7 +2,7 @@
 
 ## Rule Details
 
-This error is raised to highlight a potential error. Commonly, when a developer intends to write
+This rule is raised to highlight a potential error. Commonly, when a developer intends to write
 
 ```js
 if(!(a in b)) {
@@ -26,17 +26,17 @@ if(('' + !a) in b) {
 }
 ```
 
-The following patterns are considered problems:
+Examples of **incorrect** code for this rule:
 
 ```js
 /*eslint no-negated-in-lhs: 2*/
 
-if(!a in b) {       /*error The `in` expression's left operand is negated*/
+if(!a in b) {
     // do something
 }
 ```
 
-The following patterns are not considered problems:
+Examples of **correct** code for this rule:
 
 ```js
 /*eslint no-negated-in-lhs: 2*/

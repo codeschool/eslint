@@ -16,11 +16,29 @@ var rule = require("../../../lib/rules/complexity"),
 // Helpers
 //------------------------------------------------------------------------------
 
+/**
+ * Generates a code string with the amount of complexity specified in the parameter
+ * @param {int} complexity The level of complexity
+ * @returns {string} Code with the amount of complexity specified in the parameter
+ * @private
+ */
+function createComplexity(complexity) {
+    var funcString = "function test (a) { if (a === 1) {";
+
+    for (var i = 2; i < complexity; i++) {
+        funcString += "} else if (a === " + i + ") {";
+    }
+
+    funcString += "} };";
+
+    return funcString;
+}
 
 var ruleTester = new RuleTester();
 ruleTester.run("complexity", rule, {
     valid: [
-        { code: "function a(x) {}", options: [1] },
+        { code: "function a(x) {}" },
+        { code: "function b(x) {}", options: [1] },
         { code: "function a(x) {if (true) {return x;}}", options: [2] },
         { code: "function a(x) {if (true) {return x;} else {return x+1;}}", options: [2] },
         { code: "function a(x) {if (true) {return x;} else if (false) {return x+1;} else {return 4;}}", options: [3] },
@@ -38,7 +56,10 @@ ruleTester.run("complexity", rule, {
         { code: "function a(x) {while(true) {'foo';}}", options: [2] },
         { code: "function a(x) {do {'foo';} while (true)}", options: [2] },
         { code: "if (foo) { bar(); }", options: [3] },
-        { code: "var a = (x) => {do {'foo';} while (true)}", options: [2], parserOptions: { ecmaVersion: 6 } }
+        { code: "var a = (x) => {do {'foo';} while (true)}", options: [2], parserOptions: { ecmaVersion: 6 } },
+
+        // object property options
+        { code: "function b(x) {}", options: [{ "maximum": 1 }] }
     ],
     invalid: [
         { code: "function a(x) {}", options: [0], errors: [{ message: "Function 'a' has a complexity of 1."}] },
@@ -64,6 +85,13 @@ ruleTester.run("complexity", rule, {
         { code: "function a(x) {(function() {while(true){'foo';}})(); (function() {while(true){'bar';}})();}", options: [1], errors: 2 },
         { code: "function a(x) {(function() {while(true){'foo';}})(); (function() {'bar';})();}", options: [1], errors: 1 },
         { code: "var obj = { a(x) { return x ? 0 : 1; } };", options: [1], parserOptions: { ecmaVersion: 6 }, errors: [{ message: "Function 'a' has a complexity of 2."}] },
-        { code: "var obj = { a: function b(x) { return x ? 0 : 1; } };", options: [1], errors: [{ message: "Function 'b' has a complexity of 2."}] }
+        { code: "var obj = { a: function b(x) { return x ? 0 : 1; } };", options: [1], errors: [{ message: "Function 'b' has a complexity of 2."}] },
+        {
+            code: createComplexity(21),
+            errors: [{ message: "Function 'test' has a complexity of 21." }]
+        },
+
+        // object property options
+        { code: "function a(x) {}", options: [{ "maximum": 0 }], errors: [{ message: "Function 'a' has a complexity of 1."}] }
     ]
 });

@@ -19,7 +19,13 @@ The following pattern is considered a problem:
 /*eslint no-magic-numbers: 2*/
 
 var dutyFreePrice = 100,
-    finalPrice = dutyFreePrice + (dutyFreePrice * 0.25); /*error No magic number: 0.25*/
+    finalPrice = dutyFreePrice + (dutyFreePrice * 0.25);
+
+
+/*eslint no-magic-numbers: 2*/
+
+var data = ['foo', 'bar', 'baz'];
+var thirdValue = data[3];
 ```
 
 The following pattern is considered okay:
@@ -35,15 +41,28 @@ var dutyFreePrice = 100,
 
 ## Options
 
-### ignore
+### `ignore`
 
 An array of numbers to ignore. It's set to `[]` by default.
 If provided, it must be an `Array`.
 
-### enforceConst
+### `ignoreArrayIndexes`
+
+A boolean to specify if numbers used as array indexes are considered okay. `false` by default.
+
+The following pattern is considered okay:
+
+```js
+/*eslint no-magic-numbers: [2, {"ignoreArrayIndexes": true }]*/
+
+var data = ['foo', 'bar', 'baz'];
+var thirdValue = data[3];
+```
+
+### `enforceConst`
 
 A boolean to specify if we should check for the const keyword in variable declaration of numbers. `false` by default.
 
-### detectObjects
+### `detectObjects`
 
 A boolean to specify if we should detect numbers when setting object properties for example. `false` by default.

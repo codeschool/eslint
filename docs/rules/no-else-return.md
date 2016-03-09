@@ -1,4 +1,4 @@
-# Disallow return in else (no-else-return)
+# Disallow return before else (no-else-return)
 
 If an `if` block contains a `return` statement, the `else` block becomes unnecessary. Its contents can be placed outside of the block.
 
@@ -16,7 +16,7 @@ function foo() {
 
 This rule is aimed at highlighting an unnecessary block of code following an `if` containing a return statement. As such, it will warn when it encounters an `else` following a chain of `if`s, all of them containing a `return` statement.
 
-The following patterns are considered problems:
+Examples of **incorrect** code for this rule:
 
 ```js
 /*eslint no-else-return: 2*/
@@ -24,7 +24,7 @@ The following patterns are considered problems:
 function foo() {
     if (x) {
         return y;
-    } else {            /*error Unexpected 'else' after 'return'.*/
+    } else {
         return z;
     }
 }
@@ -34,7 +34,7 @@ function foo() {
         return y;
     } else if (z) {
         return w;
-    } else {            /*error Unexpected 'else' after 'return'.*/
+    } else {
         return t;
     }
 }
@@ -42,7 +42,7 @@ function foo() {
 function foo() {
     if (x) {
         return y;
-    } else {            /*error Unexpected 'else' after 'return'.*/
+    } else {
         var t = "foo";
     }
 
@@ -54,16 +54,16 @@ function foo() {
     if (x) {
         if (y) {
             return y;
-        } else {        /*error Unexpected 'else' after 'return'.*/
+        } else {
             return x;
         }
-    } else {            /*error Unexpected 'else' after 'return'.*/
+    } else {
         return z;
     }
 }
 ```
 
-The follow patterns are not considered problems:
+Examples of **correct** code for this rule:
 
 ```js
 /*eslint no-else-return: 2*/

@@ -58,7 +58,7 @@ function doSomething() {
 
 This rule requires that function declarations and, optionally, variable declarations be in the root of a program or the body of a function.
 
-### Options
+## Options
 
 This rule takes a single option to specify whether it should check just function declarations or both function and variable declarations. The default is `"functions"`. Setting it to `"both"` will apply the same rules to both types of declarations.
 
@@ -68,43 +68,28 @@ You can set the option in configuration like this:
 "no-inner-declarations": [2, "both"]
 ```
 
-The following patterns are considered problems:
+### functions
+
+Examples of **incorrect** code for the default `"functions"` option:
 
 ```js
 /*eslint no-inner-declarations: 2*/
 
 if (test) {
-    function doSomething() { }        /*error Move function declaration to program root.*/
+    function doSomething() { }
 }
 
 function doSomethingElse() {
     if (test) {
-        function doAnotherThing() { } /*error Move function declaration to function body root.*/
+        function doAnotherThing() { }
     }
 }
 ```
 
-With "both" option to check variable declarations, the following are considered problems:
-
-```js
-/*eslint no-inner-declarations: [2, "both"]*/
-
-if (test) {
-    var foo = 42;            /*error Move variable declaration to program root.*/
-}
-
-function doAnotherThing() {
-    if (test) {
-        var bar = 81;        /*error Move variable declaration to function body root.*/
-    }
-}
-```
-
-The following patterns are considered valid:
+Examples of **correct** code for the default `"functions"` option:
 
 ```js
 /*eslint no-inner-declarations: 2*/
-/*eslint-env es6*/
 
 function doSomething() { }
 
@@ -120,6 +105,31 @@ var fn;
 if (test) {
     fn = function fnExpression() { };
 }
+```
+
+### both
+
+Examples of **incorrect** code for the `"both"` option:
+
+```js
+/*eslint no-inner-declarations: [2, "both"]*/
+
+if (test) {
+    var foo = 42;
+}
+
+function doAnotherThing() {
+    if (test) {
+        var bar = 81;
+    }
+}
+```
+
+Examples of **correct** code for the `"both"` option:
+
+```js
+/*eslint no-inner-declarations: 2*/
+/*eslint-env es6*/
 
 var bar = 42;
 

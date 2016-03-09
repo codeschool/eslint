@@ -11,9 +11,9 @@ The following patterns are considered problems:
 ```js
 /*eslint no-implicit-globals: 2*/
 
-var foo = 1; /*error Implicit global variable.*/
+var foo = 1;
 
-function bar() {} /*error Implicit global variable.*/
+function bar() {}
 ```
 
 The following patterns are not considered problems:
@@ -41,7 +41,7 @@ var foo = 1;
 function bar() {}
 ```
 
-## When Not to Use It
+## When Not To Use It
 
 If you want to be able to declare variables and functions in the global scope you can safely disable this rule. Or if you are always using module scoped files, this rule will never apply.
 

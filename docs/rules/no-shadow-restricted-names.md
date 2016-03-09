@@ -10,21 +10,21 @@ Then any code used within the same scope would not get the global `undefined`, b
 
 ## Rule Details
 
-The following patterns are considered problems:
+Examples of **incorrect** code for this rule:
 
 ```js
 /*eslint no-shadow-restricted-names: 2*/
 
-function NaN(){}       /*error Shadowing of global property "NaN".*/
+function NaN(){}
 
-!function(Infinity){}; /*error Shadowing of global property "Infinity".*/
+!function(Infinity){};
 
-var undefined;         /*error Shadowing of global property "undefined".*/
+var undefined;
 
-try {} catch(eval){}   /*error Shadowing of global property "eval".*/
+try {} catch(eval){}
 ```
 
-The following patterns are not considered problems:
+Examples of **correct** code for this rule:
 
 ```js
 /*eslint no-shadow-restricted-names: 2*/
@@ -38,3 +38,7 @@ function f(a, b){}
 
 * [Annotated ES5 - §15.1.1](http://es5.github.io/#x15.1.1)
 * [Annotated ES5 - Annex C](http://es5.github.io/#C)
+
+## Related Rules
+
+* [no-shadow](no-shadow.md)

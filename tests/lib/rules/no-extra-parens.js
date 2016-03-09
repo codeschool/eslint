@@ -129,8 +129,14 @@ ruleTester.run("no-extra-parens", rule, {
         "[a, b]",
         "!{a: 0, b: 1}",
 
+        // ExpressionStatement restricted productions
+        "({});",
+        "(function(){});",
+        "(let[a] = b);",
+        { code: "(function*(){});", parserOptions: { ecmaVersion: 6 } },
+        { code: "(class{});", parserOptions: { ecmaVersion: 6 } },
+
         // special cases
-        "(a + b) * (c + d) == e",
         "(0).a",
         "(function(){ }())",
         "({a: function(){}}.a());",
@@ -177,6 +183,12 @@ ruleTester.run("no-extra-parens", rule, {
         {code: "for(a in (0));", options: ["functions"]},
         {code: "var a = (b = c)", options: ["functions"]},
         {code: "_ => (a = 0)", options: ["functions"], parserOptions: { ecmaVersion: 6 }},
+
+        // ["all", {conditionalAssign: false}] enables extra parens around conditional assignments
+        {code: "while ((foo = bar())) {}", options: ["all", {conditionalAssign: false}]},
+        {code: "if ((foo = bar())) {}", options: ["all", {conditionalAssign: false}]},
+        {code: "do; while ((foo = bar()))", options: ["all", {conditionalAssign: false}]},
+        {code: "for (;(a = b););", options: ["all", {conditionalAssign: false}]},
 
         // https://github.com/eslint/eslint/issues/3653
         "(function(){}).foo(), 1, 2;",
@@ -282,9 +294,7 @@ ruleTester.run("no-extra-parens", rule, {
         invalid("(0.0).a", "Literal"),
         invalid("(0xBEEF).a", "Literal"),
         invalid("(1e6).a", "Literal"),
-        invalid("({foo: 1})", "ObjectExpression"),
         invalid("a[(function() {})]", "FunctionExpression"),
-        invalid("(function(){})", "FunctionExpression"),
         invalid("new (function(){})", "FunctionExpression"),
         invalid("new (\nfunction(){}\n)", "FunctionExpression", 1),
         invalid("((function foo() {return 1;}))()", "FunctionExpression"),
@@ -303,6 +313,13 @@ ruleTester.run("no-extra-parens", rule, {
         invalid("0, (_ => 0)", "ArrowFunctionExpression", 1, {options: ["functions"], parserOptions: { ecmaVersion: 6 }}),
         invalid("(_ => 0), 0", "ArrowFunctionExpression", 1, {options: ["functions"], parserOptions: { ecmaVersion: 6 }}),
         invalid("a = (_ => 0)", "ArrowFunctionExpression", 1, {options: ["functions"], parserOptions: { ecmaVersion: 6 }}),
+
+
+        invalid("while ((foo = bar())) {}", "AssignmentExpression"),
+        invalid("while ((foo = bar())) {}", "AssignmentExpression", 1, {options: ["all", {conditionalAssign: true}]}),
+        invalid("if ((foo = bar())) {}", "AssignmentExpression"),
+        invalid("do; while ((foo = bar()))", "AssignmentExpression"),
+        invalid("for (;(a = b););", "AssignmentExpression"),
 
         // https://github.com/eslint/eslint/issues/3653
         invalid("((function(){})).foo();", "FunctionExpression"),

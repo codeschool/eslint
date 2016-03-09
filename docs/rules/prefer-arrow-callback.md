@@ -14,8 +14,8 @@ The following patterns are considered problems:
 ```js
 /*eslint prefer-arrow-callback: 2*/
 
-foo(function(a) { return a; });                /*error Unexpected function expression.*/
-foo(function() { return this.a; }.bind(this)); /*error Unexpected function expression.*/
+foo(function(a) { return a; });
+foo(function() { return this.a; }.bind(this));
 ```
 
 The following patterns are not considered problems:
@@ -37,7 +37,7 @@ foo(function() { return this.a; });
 foo(function bar(n) { return n && n + bar(n - 1); });
 ```
 
-## When Not to Use It
+## When Not To Use It
 
 This rule should not be used in ES3/5 environments.
 

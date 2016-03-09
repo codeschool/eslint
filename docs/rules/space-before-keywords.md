@@ -1,6 +1,8 @@
 # Require or disallow spaces before keywords (space-before-keywords)
 
-Keywords are syntax elements of JavaScript, such as `function` and `if`. These identifiers have special meaning to the language and so often appear in a different color in code editors. As an important part of the language, style guides often refer to the spacing that should be used around keywords. For example, you might have a style guide that says keywords should be always be preceeded by spaces, which would mean `if-else` statements must look like this:
+**Replacement notice**: This rule was removed in ESLint v2.0 and replaced by [keyword-spacing](keyword-spacing.md) rule.
+
+Keywords are syntax elements of JavaScript, such as `function` and `if`. These identifiers have special meaning to the language and so often appear in a different color in code editors. As an important part of the language, style guides often refer to the spacing that should be used around keywords. For example, you might have a style guide that says keywords should be always be preceded by spaces, which would mean `if-else` statements must look like this:
 
 ```js
 if (foo) {
@@ -35,16 +37,16 @@ The following patterns are considered errors when configured `"never"`:
 
 if (foo) {
     // ...
-} else {}         /*error Unexpected space before keyword "else".*/
+} else {}
 
 do {
 
 }
-while (foo)       /*error Unexpected space before keyword "while".*/
+while (foo)
 
-try {} finally {} /*error Unexpected space before keyword "finally".*/
+try {} finally {}
 
-try {} catch(e) {} /*error Unexpected space before keyword "catch".*/
+try {} catch(e) {}
 ```
 
 The following patterns are not considered errors when configured `"never"`:
@@ -71,14 +73,14 @@ The following patterns are considered errors when configured `"always"`:
 
 if (foo) {
     // ...
-}else {}                           /*error Missing space before keyword "else".*/
+}else {}
 
-const foo = 'bar';let baz = 'qux'; /*error Missing space before keyword "let".*/
+const foo = 'bar';let baz = 'qux';
 
-var foo =function bar () {}        /*error Missing space before keyword "function".*/
+var foo =function bar () {}
 
 function bar() {
-    if (foo) {return; }            /*error Missing space before keyword "return".*/
+    if (foo) {return; }
 }
 ```
 

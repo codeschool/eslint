@@ -36,6 +36,9 @@ module.exports = {
             }
         }
     },
+    "shared-node-browser": {
+        globals: globals["shared-node-browser"]
+    },
     worker: {
         globals: globals.worker
     },
@@ -83,6 +86,9 @@ module.exports = {
     },
     serviceworker: {
         globals: globals.serviceworker
+    },
+    atomtest: {
+        globals: globals.atomtest
     },
     embertest: {
         globals: globals.embertest

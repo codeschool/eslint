@@ -8,19 +8,6 @@ Some styleguides require or disallow spaces before or after unary operators. Thi
 
 This rule enforces consistency regarding the spaces after `words` unary operators and after/before `nonwords` unary operators.
 
-### Options
-
-This rule has two options: `words` and `nonwords`:
-
-* `words` - applies to unary word operators such as: `new`, `delete`, `typeof`, `void`, `yield`
-* `nonwords` - applies to unary operators such as: `-`, `+`, `--`, `++`, `!`, `!!`
-
-Default values are:
-
-```json
-"space-unary-ops": [1, { "words": true, "nonwords": false }]
-```
-
 Examples of unary `words` operators:
 
 ```js
@@ -50,38 +37,45 @@ baz = !foo;
 qux = !!baz;
 ```
 
-### Examples
+## Options
+
+This rule has two options: `words` and `nonwords`:
+
+* `words` - applies to unary word operators such as: `new`, `delete`, `typeof`, `void`, `yield`
+* `nonwords` - applies to unary operators such as: `-`, `+`, `--`, `++`, `!`, `!!`
 
 Given the default values `words`: `true`, `nonwords`: `false`, the following patterns are considered problems:
 
 ```js
 /*eslint space-unary-ops: 2*/
+
+typeof!foo;
+
+void{foo:0};
+
+new[foo][0];
+
+delete(foo.bar);
+
+++ foo;
+
+foo --;
+
+- foo;
+
++ "3";
+```
+
+```js
+/*eslint space-unary-ops: 2*/
 /*eslint-env es6*/
 
-typeof!foo;        /*error Unary word operator "typeof" must be followed by whitespace.*/
-
-void{foo:0};       /*error Unary word operator "void" must be followed by whitespace.*/
-
-new[foo][0];       /*error Unary word operator "new" must be followed by whitespace.*/
-
-delete(foo.bar);   /*error Unary word operator "delete" must be followed by whitespace.*/
-
 function *foo() {
-    yield(0)       /*error Unary word operator "yield" must be followed by whitespace.*/
+    yield(0)
 }
-
-++ foo;            /*error Unexpected space after unary operator "++".*/
-
-foo --;            /*error Unexpected space before unary operator "--".*/
-
-- foo;             /*error Unexpected space after unary operator "-".*/
-
-+ "3";             /*error Unexpected space after unary operator "+".*/
 ```
 
 Given the default values `words`: `true`, `nonwords`: `false`, the following patterns are not considered problems:
-
-
 
 ```js
 /*eslint space-unary-ops: 2*/
@@ -98,7 +92,7 @@ void 0;
 // Unary operator "++" is not followed by whitespace.
 ++foo;
 
-// Unary operator "--" is not preceeded by whitespace.
+// Unary operator "--" is not preceded by whitespace.
 foo--;
 
 // Unary operator "-" is not followed by whitespace.
@@ -106,4 +100,13 @@ foo--;
 
 // Unary operator "+" is not followed by whitespace.
 +"3";
+```
+
+```js
+/*eslint space-unary-ops: 2*/
+/*eslint-env es6*/
+
+function *foo() {
+    yield (0)
+}
 ```

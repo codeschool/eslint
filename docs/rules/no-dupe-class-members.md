@@ -27,17 +27,17 @@ The following patterns are considered problems:
 
 class Foo {
   bar() { }
-  bar() { }          /*error Duplicate name "bar".*/
+  bar() { }
 }
 
 class Foo {
   bar() { }
-  get bar() { }      /*error Duplicate name "bar".*/
+  get bar() { }
 }
 
 class Foo {
   static bar() { }
-  static bar() { }   /*error Duplicate name "bar".*/
+  static bar() { }
 }
 ```
 
@@ -63,7 +63,7 @@ class Foo {
 }
 ```
 
-## When Not to Use It
+## When Not To Use It
 
 This rule should not be used in ES3/5 environments.
 

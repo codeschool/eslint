@@ -12,7 +12,7 @@ switch(foo) {
 }
 ```
 
-In this example, if `foo` is `1`,then execution will flow through both cases, as the first falls through to the second. You can prevent this by using `break`, as in this example:
+In this example, if `foo` is `1`, then execution will flow through both cases, as the first falls through to the second. You can prevent this by using `break`, as in this example:
 
 ```js
 switch(foo) {
@@ -68,7 +68,7 @@ The following patterns are considered problems:
 /*eslint no-fallthrough: 2*/
 
 switch(foo) {
-    case 1:            /*error Expected a "break" statement before "case".*/
+    case 1:
         doSomething();
 
     case 2:

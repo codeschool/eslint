@@ -1,6 +1,6 @@
 # Enforce Callback Error Handling (handle-callback-err)
 
-In node, a common pattern for dealing with asynchronous behavior is called the callback pattern.
+In Node.js, a common pattern for dealing with asynchronous behavior is called the callback pattern.
 This pattern expects an `Error` object or `null` as the first argument of the callback.
 Forgetting to handle these errors can lead to some really strange behavior in your application.
 
@@ -12,7 +12,7 @@ function loadData (err, data) {
 
 ## Rule Details
 
-This rule expects that when you're using the callback pattern in node you'll handle the error and
+This rule expects that when you're using the callback pattern in Node.js you'll handle the error and
 requires that you specify the name of your error object. The name of the argument will default to `err`.
 
 The following are considered problems:
@@ -20,7 +20,7 @@ The following are considered problems:
 ```js
 /*eslint handle-callback-err: 2*/
 
-function loadData (err, data) { /*error Expected error to be handled.*/
+function loadData (err, data) {
     doSomething();
 }
 
@@ -88,7 +88,7 @@ Examples for valid configurations:
     // ...
     ```
 
-## When Not To Use This Rule
+## When Not To Use It
 
 There are cases where it may be safe for your application to ignore errors, however only ignore errors if you are
 confident that some other form of monitoring will help you catch the problem.

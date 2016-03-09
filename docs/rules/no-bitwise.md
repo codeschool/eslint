@@ -15,31 +15,31 @@ The following patterns are considered problems:
 ```js
 /*eslint no-bitwise: 2*/
 
-var x = y | z;   /*error Unexpected use of '|'.*/
+var x = y | z;
 
-var x = y & z;   /*error Unexpected use of '&'.*/
+var x = y & z;
 
-var x = y ^ z;   /*error Unexpected use of '^'.*/
+var x = y ^ z;
 
-var x = ~ z;     /*error Unexpected use of '~'.*/
+var x = ~ z;
 
-var x = y << z;  /*error Unexpected use of '<<'.*/
+var x = y << z;
 
-var x = y >> z;  /*error Unexpected use of '>>'.*/
+var x = y >> z;
 
-var x = y >>> z; /*error Unexpected use of '>>>'.*/
+var x = y >>> z;
 
-x |= y;          /*error Unexpected use of '|='.*/
+x |= y;
 
-x &= y;          /*error Unexpected use of '&='.*/
+x &= y;
 
-x ^= y;          /*error Unexpected use of '^='.*/
+x ^= y;
 
-x <<= y;         /*error Unexpected use of '<<='.*/
+x <<= y;
 
-x >>= y;         /*error Unexpected use of '>>='.*/
+x >>= y;
 
-x >>>= y;        /*error Unexpected use of '>>>='.*/
+x >>>= y;
 ```
 
 The following patterns are not considered problems:
@@ -56,4 +56,24 @@ var x = y > z;
 var x = y < z;
 
 x += y;
+```
+
+## Options
+
+This rule supports the following options:
+
+`allow`: The list of bitwise operators to be used as exceptions to the rule. For example:
+
+```js
+/*eslint no-bitwise: [2, { allow: ["~"] }] */
+
+~[1,2,3].indexOf(1) === -1;
+```
+
+`int32Hint`: Allows the use of bitwise OR in `|0` pattern for type casting:
+
+```js
+/*eslint no-bitwise: [2, { int32Hint: true }] */
+
+var b = a|0;
 ```

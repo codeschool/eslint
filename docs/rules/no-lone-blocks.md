@@ -10,7 +10,7 @@ In JavaScript, prior to ES6, standalone code blocks delimited by curly braces do
 
 In ES6, code blocks may create a new scope if a block-level binding (`let` and `const`), a class declaration or a function declaration (in strict mode) are present. A block is not considered redundant in these cases.
 
-## Rule details
+## Rule Details
 
 This rule aims to eliminate unnecessary and potentially confusing blocks at the top level of a script or within other blocks.
 
@@ -19,23 +19,28 @@ The following patterns are considered problems:
 ```js
 /*eslint no-lone-blocks: 2*/
 
-{}                    /*error Block is redundant.*/
+{}
 
 if (foo) {
     bar();
-    {                 /*error Nested block is redundant.*/
+    {
         baz();
     }
 }
 
 function bar() {
-    {                 /*error Nested block is redundant.*/
+    {
         baz();
     }
 }
 
-{                     /*error Block is redundant.*/
+{
     function foo() {}
+}
+
+{
+    aLabel: {
+    }
 }
 ```
 
@@ -69,6 +74,9 @@ function bar() {
 
 {
     class Foo {}
+}
+
+aLabel: {
 }
 ```
 

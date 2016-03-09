@@ -38,23 +38,23 @@ The following patterns are considered problems:
 /*eslint-env es6*/
 
 for (var i=10; i; i--) {
-    (function() { return i; })();     /*error Don't make functions within a loop*/
+    (function() { return i; })();
 }
 
 while(i) {
-    var a = function() { return i; }; /*error Don't make functions within a loop*/
+    var a = function() { return i; };
     a();
 }
 
 do {
-    function a() { return i; };      /*error Don't make functions within a loop*/
+    function a() { return i; };
     a();
 } while (i);
 
 let foo = 0;
 for (let i=10; i; i--) {
     // Bad, function is referencing block scoped variable in the outer scope.
-    var a = function() { return foo; }; /*error Don't make functions within a loop*/
+    var a = function() { return foo; };
     a();
 }
 ```
@@ -77,9 +77,16 @@ for (var i=10; i; i--) {
 }
 
 for (let i=10; i; i--) {
-    var a = function() { return i; }; // OK, all references are referring to block scoped variable in the loop.
+    var a = function() { return i; }; // OK, all references are referring to block scoped variables in the loop.
     a();
 }
+
+var foo = 100;
+for (let i=10; i; i--) {
+    var a = function() { return foo; }; // OK, all references are referring to never modified variables.
+    a();
+}
+//... no modifications of foo after this loop ...
 ```
 
 ## Further Reading

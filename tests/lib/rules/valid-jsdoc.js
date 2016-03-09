@@ -38,6 +38,48 @@ ruleTester.run("valid-jsdoc", rule, {
         "/**\n* Description\n* @param {Object} p bar\n* @param {string[]} p.files qux\n* @param {Function} cb baz\n* @returns {void} */\nfunction foo(p, cb){}",
         "/**\n* Description\n* @override */\nfunction foo(arg1, arg2){ return ''; }",
         "/**\n* Description\n* @inheritdoc */\nfunction foo(arg1, arg2){ return ''; }",
+        "/**\n* Description\n* @inheritDoc */\nfunction foo(arg1, arg2){ return ''; }",
+        {
+            code:
+                "call(\n" +
+                "  /**\n" +
+                "   * Doc for a function expression in a call expression.\n" +
+                "   * @param {string} argName This is the param description.\n" +
+                "   * @return {string} This is the return description.\n" +
+                "   */\n" +
+                "  function(argName) {\n" +
+                "    return 'the return';\n" +
+                "  }\n" +
+                ");\n",
+            options: [{requireReturn: false}]
+        },
+        {
+            code:
+                "/**\n" +
+                "* Create a new thing.\n" +
+                "*/\n" +
+                "var thing = new Thing({\n" +
+                "  foo: function() {\n" +
+                "    return 'bar';\n" +
+                "  }\n" +
+                "});\n",
+            options: [{requireReturn: false}]
+        },
+        {
+            code:
+                "/**\n" +
+                "* Create a new thing.\n" +
+                "*/\n" +
+                "var thing = new Thing({\n" +
+                "  /**\n" +
+                "   * @return {string} A string.\n" +
+                "   */\n" +
+                "  foo: function() {\n" +
+                "    return 'bar';\n" +
+                "  }\n" +
+                "});\n",
+            options: [{requireReturn: false}]
+        },
         {
             code: "/**\n* Description\n* @return {void} */\nfunction foo(){}",
             options: [{}]
@@ -89,6 +131,7 @@ ruleTester.run("valid-jsdoc", rule, {
             options: [{requireReturnDescription: false}]
         },
         "var obj = {\n /**\n * Getter\n * @type {string}\n */\n get location() {\n return this._location;\n }\n }",
+        "var obj = {\n /**\n * Setter\n * @param {string} value The location\n */\n set location(value) {\n this._location = value;\n }\n }",
         {
             code: "/**\n * Description for A.\n */\n class A {\n /**\n * Description for constructor.\n * @param {object[]} xs - xs\n */\n constructor(xs) {\n /**\n * Description for this.xs;\n * @type {object[]}\n */\n this.xs = xs.filter(x => x != null);\n }\n}",
             options: [{requireReturn: false}],
@@ -125,6 +168,15 @@ ruleTester.run("valid-jsdoc", rule, {
             code: "/** Foo \n@return Foo\n */\nfunction foo(){}",
             options: [{ requireReturnType: false }]
         },
+        {
+            code:
+                "/**\n" +
+                " * A thing interface. \n" +
+                " * @interface\n" +
+                " */\n" +
+                "function Thing() {}",
+            options: [{ requireReturn: true }]
+        },
 
         // classes
         {
@@ -141,27 +193,26 @@ ruleTester.run("valid-jsdoc", rule, {
                 "        this.a = xs;" +
                 "    }\n" +
                 "}",
-            options: [{requireReturn: false}],
+            options: [{requireReturn: true}],
             parserOptions: {
                 ecmaVersion: 6
             }
         },
         {
             code:
-                "/**\n" +
-                " * Description for A.\n" +
-                " */\n" +
-                "class A {\n" +
-                "    /**\n" +
-                "     * Description for constructor.\n" +
-                "     * @param {object[]} xs - xs\n" +
-                "     * @returns {void}\n" +
-                "     */\n" +
-                "    constructor(xs) {\n" +
-                "        this.a = xs;" +
-                "    }\n" +
-                "}",
-            options: [{requireReturn: true}],
+            "/**\n" +
+            " * Description for A.\n" +
+            " */\n" +
+            "class A {\n" +
+            "    /**\n" +
+            "     * Description for method.\n" +
+            "     * @param {object[]} xs - xs\n" +
+            "     */\n" +
+            "    print(xs) {\n" +
+            "        this.a = xs;" +
+            "    }\n" +
+            "}",
+            options: [{requireReturn: false}],
             parserOptions: {
                 ecmaVersion: 6
             }
@@ -193,14 +244,169 @@ ruleTester.run("valid-jsdoc", rule, {
             parserOptions: {
                 ecmaVersion: 6
             }
+        },
+
+
+        {
+            code:
+                "/**\n" +
+                " * Use of this with a 'namepath'.\n" +
+                " * @this some.name\n" +
+                " */\n" +
+                "function foo() {}",
+            options: [{requireReturn: false}]
+        },
+        {
+            code:
+                "/**\n" +
+                " * Use of this with a type expression.\n" +
+                " * @this {some.name}\n" +
+                " */\n" +
+                "function foo() {}",
+            options: [{requireReturn: false}]
+        },
+        // type validations
+        {
+            code:
+            "/**\n" +
+            "* Foo\n" +
+            "* @param {Array.<*>} hi - desc\n" +
+            "* @returns {*} returns a node\n" +
+            "*/\n" +
+            "function foo(hi){}",
+            options: [{
+                preferType: {
+                    "String": "string",
+                    "Astnode": "ASTNode"
+                }
+            }]
+        },
+        {
+            code:
+            "/**\n" +
+            "* Foo\n" +
+            "* @param {string} hi - desc\n" +
+            "* @returns {ASTNode} returns a node\n" +
+            "*/\n" +
+            "function foo(hi){}",
+            options: [{
+                preferType: {
+                    "String": "string",
+                    "Astnode": "ASTNode"
+                }
+            }]
+        },
+        {
+            code:
+            "/**\n" +
+            "* Foo\n" +
+            "* @param {{20:string}} hi - desc\n" +
+            "* @returns {Astnode} returns a node\n" +
+            "*/\n" +
+            "function foo(hi){}",
+            options: [{
+                preferType: {
+                    "String": "string",
+                    "astnode": "ASTNode"
+                }
+            }]
+        },
+        {
+            code:
+            "/**\n" +
+            "* Foo\n" +
+            "* @param {String|number|Test} hi - desc\n" +
+            "* @returns {Astnode} returns a node\n" +
+            "*/\n" +
+            "function foo(hi){}",
+            options: [{
+                preferType: {
+                    "test": "Test"
+                }
+            }]
+        },
+        {
+            code:
+            "/**\n" +
+            "* Foo\n" +
+            "* @param {Array.<string>} hi - desc\n" +
+            "* @returns {Astnode} returns a node\n" +
+            "*/\n" +
+            "function foo(hi){}",
+            options: [{
+                preferType: {
+                    "String": "string",
+                    "astnode": "ASTNode"
+                }
+            }]
+        },
+        {
+            code:
+            "/**\n" +
+            " * Test dash and slash.\n" +
+            " * @extends module:stb/emitter~Emitter\n" +
+            " */\n" +
+            "function foo() {}",
+            options: [{
+                "requireReturn": false
+            }]
+        },
+        {
+            code:
+            "/**\n" +
+            " * Test dash and slash.\n" +
+            " * @requires module:config\n" +
+            " * @requires module:modules/notifications\n" +
+            " */\n" +
+            "function foo() {}",
+            options: [{
+                "requireReturn": false
+            }]
         }
     ],
 
     invalid: [
         {
+            code:
+                "call(\n" +
+                "  /**\n" +
+                "   * Doc for a function expression in a call expression.\n" +
+                "   * @param {string} bogusName This is the param description.\n" +
+                "   * @return {string} This is the return description.\n" +
+                "   */\n" +
+                "  function(argName) {\n" +
+                "    return 'the return';\n" +
+                "  }\n" +
+                ");\n",
+            options: [{requireReturn: false}],
+            errors: [{
+                message: "Expected JSDoc for 'argName' but found 'bogusName'.",
+                type: "Block"
+            }]
+        },
+        {
             code: "/** @@foo */\nfunction foo(){}",
             errors: [{
                 message: "JSDoc syntax error.",
+                type: "Block"
+            }]
+        },
+        {
+            code:
+                "/**\n" +
+                "* Create a new thing.\n" +
+                "*/\n" +
+                "var thing = new Thing({\n" +
+                "  /**\n" +
+                "   * Missing return tag.\n" +
+                "   */\n" +
+                "  foo: function() {\n" +
+                "    return 'bar';\n" +
+                "  }\n" +
+                "});\n",
+            options: [{requireReturn: false}],
+            errors: [{
+                message: "Missing JSDoc @returns for function.",
                 type: "Block"
             }]
         },
@@ -294,6 +500,59 @@ ruleTester.run("valid-jsdoc", rule, {
                 message: "Missing JSDoc @returns for function.",
                 type: "Block"
             }]
+        },
+        {
+            code: "/**\n* Foo\n* @param {string} p \n*/\nvar foo = function(){}",
+            errors: [{
+                message: "Missing JSDoc parameter description for 'p'.",
+                type: "Block"
+            }, {
+                message: "Missing JSDoc @returns for function.",
+                type: "Block"
+            }]
+        },
+        {
+            code: "/**\n* Foo\n* @param {string} p \n*/\nvar foo = \nfunction(){}",
+            errors: [{
+                message: "Missing JSDoc parameter description for 'p'.",
+                type: "Block"
+            }, {
+                message: "Missing JSDoc @returns for function.",
+                type: "Block"
+            }]
+        },
+        {
+            code:
+            "/**\n" +
+            " * Description for a\n" +
+            " */\n" +
+            "var A = \n" +
+            "  class {\n" +
+            "    /**\n" +
+            "     * Description for method.\n" +
+            "     * @param {object[]} xs - xs\n" +
+            "     */\n" +
+            "    print(xs) {\n" +
+            "        this.a = xs;" +
+            "    }\n" +
+            "};",
+            options: [{
+                requireReturn: true,
+                "matchDescription": "^[A-Z][A-Za-z0-9\\s]*[.]$"
+            }],
+            errors: [
+                {
+                    message: "JSDoc description does not satisfy the regex pattern.",
+                    type: "Block"
+                },
+                {
+                    message: "Missing JSDoc @returns for function.",
+                    type: "Block"
+                }
+            ],
+            parserOptions: {
+                ecmaVersion: 6
+            }
         },
         {
             code: "/**\n* Foo\n* @returns {string} \n*/\nfunction foo(){}",
@@ -494,7 +753,7 @@ ruleTester.run("valid-jsdoc", rule, {
                 "     * Description for constructor.\n" +
                 "     * @param {object[]} xs - xs\n" +
                 "     */\n" +
-                "    constructor(xs) {\n" +
+                "    print(xs) {\n" +
                 "        this.a = xs;" +
                 "    }\n" +
                 "};",
@@ -551,6 +810,125 @@ ruleTester.run("valid-jsdoc", rule, {
             parserOptions: {
                 ecmaVersion: 6
             }
+        },
+        {
+            code:
+                "/**\n" +
+                " * Use of this with an invalid type expression\n" +
+                " * @this {not.a.valid.type.expression\n" +
+                " */\n" +
+                "function foo() {}",
+            options: [{requireReturn: false}],
+            errors: [{
+                message: "JSDoc type missing brace.",
+                type: "Block"
+            }]
+        },
+        {
+            code:
+                "/**\n" +
+                " * Use of this with a type that is not a member expression\n" +
+                " * @this {Array<string>}\n" +
+                " */\n" +
+                "function foo() {}",
+            options: [{requireReturn: false}],
+            errors: [{
+                message: "JSDoc syntax error.",
+                type: "Block"
+            }]
+        },
+
+        // type validations
+        {
+            code:
+            "/**\n" +
+            "* Foo\n" +
+            "* @param {String} hi - desc\n" +
+            "* @returns {Astnode} returns a node\n" +
+            "*/\n" +
+            "function foo(hi){}",
+            options: [{
+                preferType: {
+                    "String": "string",
+                    "Astnode": "ASTNode"
+                }
+            }],
+            errors: [
+                {
+                    message: "Use 'string' instead of 'String'.",
+                    type: "Block"
+                },
+                {
+                    message: "Use 'ASTNode' instead of 'Astnode'.",
+                    type: "Block"
+                }
+            ]
+        },
+        {
+            code:
+            "/**\n" +
+            "* Foo\n" +
+            "* @param {{20:String}} hi - desc\n" +
+            "* @returns {Astnode} returns a node\n" +
+            "*/\n" +
+            "function foo(hi){}",
+            options: [{
+                preferType: {
+                    "String": "string",
+                    "Astnode": "ASTNode"
+                }
+            }],
+            errors: [
+                {
+                    message: "Use 'string' instead of 'String'.",
+                    type: "Block"
+                },
+                {
+                    message: "Use 'ASTNode' instead of 'Astnode'.",
+                    type: "Block"
+                }
+            ]
+        },
+        {
+            code:
+            "/**\n" +
+            "* Foo\n" +
+            "* @param {String|number|test} hi - desc\n" +
+            "* @returns {Astnode} returns a node\n" +
+            "*/\n" +
+            "function foo(hi){}",
+            options: [{
+                preferType: {
+                    "test": "Test"
+                }
+            }],
+            errors: [
+                {
+                    message: "Use 'Test' instead of 'test'.",
+                    type: "Block"
+                }
+            ]
+        },
+        {
+            code:
+            "/**\n" +
+            "* Foo\n" +
+            "* @param {Array.<String>} hi - desc\n" +
+            "* @returns {Astnode} returns a node\n" +
+            "*/\n" +
+            "function foo(hi){}",
+            options: [{
+                preferType: {
+                    "String": "string",
+                    "astnode": "ASTNode"
+                }
+            }],
+            errors: [
+                {
+                    message: "Use 'string' instead of 'String'.",
+                    type: "Block"
+                }
+            ]
         }
     ]
 });

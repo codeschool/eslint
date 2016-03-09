@@ -15,20 +15,20 @@ The following patterns are considered problems:
 /*eslint no-throw-literal: 2*/
 /*eslint-env es6*/
 
-throw "error";         /*error Expected an object to be thrown.*/
+throw "error";
 
-throw 0;               /*error Expected an object to be thrown.*/
+throw 0;
 
-throw undefined;       /*error Do not throw undefined.*/
+throw undefined;
 
-throw null;            /*error Expected an object to be thrown.*/
+throw null;
 
 var err = new Error();
-throw "an " + err;     /*error Expected an object to be thrown.*/
+throw "an " + err;
 // err is recast to a string literal
 
 var err = new Error();
-throw `${err}`         /*error Expected an object to be thrown.*/
+throw `${err}`
 
 ```
 
@@ -51,7 +51,7 @@ try {
 }
 ```
 
-### Known Limitations
+## Known Limitations
 
 Due to the limits of static analysis, this rule cannot guarantee that you will only throw `Error` objects.  For instance, the following cases do not throw an `Error` object, but they will not be considered problems:
 

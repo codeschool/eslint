@@ -37,7 +37,7 @@ When using `"after"` this spacing will be enforced:
 /*eslint yield-star-spacing: [2, "after"]*/
 /*eslint-env es6*/
 
-function *generator() {
+function* generator() {
   yield* other();
 }
 ```
@@ -59,7 +59,7 @@ When using `"both"` this spacing will be enforced:
 /*eslint yield-star-spacing: [2, "both"]*/
 /*eslint-env es6*/
 
-function *generator() {
+function * generator() {
   yield * other();
 }
 ```
@@ -70,12 +70,13 @@ When using `"neither"` this spacing will be enforced:
 /*eslint yield-star-spacing: [2, "neither"]*/
 /*eslint-env es6*/
 
-function *generator() {
+function*generator() {
   yield*other();
 }
 ```
 
-To use this rule you must set the `generators` flag to `true` in the `ecmaFeatures` configuration object.
+To use this rule you either need to [use the `es6` environment](../user-guide/configuring.md#specifying-environments) or
+[set `ecmaVersion` to `6` in `parserOptions`](../user-guide/configuring.md#specifying-parser-options).
 
 ## When Not To Use It
 

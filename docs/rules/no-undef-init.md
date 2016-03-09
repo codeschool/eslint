@@ -21,17 +21,17 @@ It's considered a best practice to avoid initializing variables to `undefined`.
 
 This rule aims to eliminate variable declarations that initialize to `undefined`.
 
-The following patterns are considered problems:
+Examples of **incorrect** code for this rule:
 
 ```js
 /*eslint no-undef-init: 2*/
 /*eslint-env es6*/
 
-var foo = undefined; /*error It's not necessary to initialize 'foo' to undefined.*/
-let bar = undefined; /*error It's not necessary to initialize 'bar' to undefined.*/
+var foo = undefined;
+let bar = undefined;
 ```
 
-The following patterns are not considered problems:
+Examples of **correct** code for this rule:
 
 ```js
 /*eslint no-undef-init: 2*/

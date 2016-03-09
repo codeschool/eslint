@@ -69,7 +69,13 @@ ruleTester.run("no-implicit-coercion", rule, {
         {code: "+foo", options: [{number: false}]},
         {code: "1*foo", options: [{number: false}]},
         {code: "\"\"+foo", options: [{string: false}]},
-        {code: "foo += \"\"", options: [{string: false}]}
+        {code: "foo += \"\"", options: [{string: false}]},
+        {code: "var a = !!foo", options: [{boolean: true, allow: ["!!"]}]},
+        {code: "var a = ~foo.indexOf(1)", options: [{boolean: true, allow: ["~"]}]},
+        {code: "var a = ~foo", options: [{boolean: true}]},
+        {code: "var a = 1 * foo", options: [{boolean: true, allow: ["*"]}]},
+        {code: "var a = +foo", options: [{boolean: true, allow: ["+"]}]},
+        {code: "var a = \"\" + foo", options: [{boolean: true, string: true, allow: ["+"]}]}
     ],
     invalid: [
         {code: "!!foo", errors: [{message: "use `Boolean(foo)` instead.", type: "UnaryExpression"}]},
@@ -84,6 +90,11 @@ ruleTester.run("no-implicit-coercion", rule, {
         {code: "\"\"+foo", errors: [{message: "use `String(foo)` instead.", type: "BinaryExpression"}]},
         {code: "foo+\"\"", errors: [{message: "use `String(foo)` instead.", type: "BinaryExpression"}]},
         {code: "\"\"+foo.bar", errors: [{message: "use `String(foo.bar)` instead.", type: "BinaryExpression"}]},
-        {code: "foo += \"\"", errors: [{message: "use `foo = String(foo)` instead.", type: "AssignmentExpression"}]}
+        {code: "foo += \"\"", errors: [{message: "use `foo = String(foo)` instead.", type: "AssignmentExpression"}]},
+        {code: "var a = !!foo", options: [{boolean: true, allow: ["~"]}], errors: [{message: "use `Boolean(foo)` instead.", type: "UnaryExpression"}]},
+        {code: "var a = ~foo.indexOf(1)", options: [{boolean: true, allow: ["!!"]}], errors: [{message: "use `foo.indexOf(1) !== -1` instead.", type: "UnaryExpression"}]},
+        {code: "var a = 1 * foo", options: [{boolean: true, allow: ["+"]}], errors: [{message: "use `Number(foo)` instead.", type: "BinaryExpression"}]},
+        {code: "var a = +foo", options: [{boolean: true, allow: ["*"]}], errors: [{message: "use `Number(foo)` instead.", type: "UnaryExpression"}]},
+        {code: "var a = \"\" + foo", options: [{boolean: true, allow: ["*"]}], errors: [{message: "use `String(foo)` instead.", type: "BinaryExpression"}]}
     ]
 });

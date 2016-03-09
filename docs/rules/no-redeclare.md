@@ -12,7 +12,7 @@ The following patterns are considered problems:
 /*eslint no-redeclare: 2*/
 
 var a = 3;
-var a = 10; /*error "a" is already defined*/
+var a = 10;
 ```
 
 The following patterns are not considered problems:
@@ -25,7 +25,7 @@ var a = 3;
 a = 10;
 ```
 
-### Options
+## Options
 
 This rule takes one option, an object, with a property `"builtinGlobals"`.
 
@@ -35,7 +35,7 @@ This rule takes one option, an object, with a property `"builtinGlobals"`.
 }
 ```
 
-#### builtinGlobals
+### builtinGlobals
 
 `false` by default.
 If this is `true`, this rule checks with built-in global variables such as `Object`, `Array`, `Number`, ...
@@ -45,7 +45,7 @@ When `{"builtinGlobals": true}`, the following patterns are considered problems:
 ```js
 /*eslint no-redeclare: [2, { "builtinGlobals": true }]*/
 
-var Object = 0; /*error "Object" is already defined*/
+var Object = 0;
 ```
 
 When `{"builtinGlobals": true}` and under `browser` environment, the following patterns are considered problems:
@@ -54,7 +54,7 @@ When `{"builtinGlobals": true}` and under `browser` environment, the following p
 /*eslint-env browser*/
 /*eslint no-redeclare: [2, { "builtinGlobals": true }]*/
 
-var top = 0; /*error "top" is already defined*/
+var top = 0;
 ```
 
 * Note: The `browser` environment has many built-in global variables, `top` is one of them.

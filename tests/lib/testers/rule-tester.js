@@ -106,7 +106,7 @@ describe("RuleTester", function() {
                     { code: "Eval(foo)", errors: [{ message: "eval sucks.", type: "CallExpression"}] }
                 ]
             });
-        }, /Should have 1 errors but had 0/);
+        }, /Should have 1 error but had 0/);
     });
 
     it("should throw an error when the error message is wrong", function() {
@@ -268,6 +268,19 @@ describe("RuleTester", function() {
         }, /Should have 2 errors but had 1/);
     });
 
+    it("should throw an error if invalid code does not have errors", function() {
+        assert.throws(function() {
+            ruleTester.run("no-eval", require("../../fixtures/testers/rule-tester/no-eval"), {
+                valid: [
+                    "Eval(foo)"
+                ],
+                invalid: [
+                    { code: "eval(foo)" }
+                ]
+            });
+        }, /Did not specify errors for an invalid test of no-eval/);
+    });
+
     it("should throw an error if invalid code has the wrong explicit number of errors", function() {
 
         assert.throws(function() {
@@ -280,6 +293,19 @@ describe("RuleTester", function() {
                 ]
             });
         }, /Should have 2 errors but had 1/);
+    });
+
+    // https://github.com/eslint/eslint/issues/4779
+    it("should throw an error if there's a parsing error and output doesn't match", function() {
+
+        assert.throws(function() {
+            ruleTester.run("no-eval", require("../../fixtures/testers/rule-tester/no-eval"), {
+                valid: [],
+                invalid: [
+                    { code: "eval(`foo`)", output: "eval(`foo`);", errors: [{}] }
+                ]
+            });
+        }, /fatal parsing error/i);
     });
 
     it("should not throw an error if invalid code has at least an expected empty error object", function() {

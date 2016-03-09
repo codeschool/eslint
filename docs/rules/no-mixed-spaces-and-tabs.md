@@ -6,9 +6,9 @@ Most code conventions require either tabs or spaces be used for indentation. As 
 
 The `no-mixed-spaces-and-tabs` rule is aimed at flagging any lines of code that are indented with a mixture of tabs and spaces.
 
-### Options
+## Options
 
-* Smart Tabs
+### smart-tabs
 
 This option suppresses warnings about mixed tabs and spaces when the latter are used for alignment only. This technique is called [SmartTabs](http://www.emacswiki.org/emacs/SmartTabs). The option is turned off by default.
 
@@ -26,7 +26,7 @@ The following patterns are considered problems:
 function add(x, y) {
 // --->..return x + y;
 
-      return x + y;    /*error Mixed spaces and tabs.*/
+      return x + y;
 }
 
 function main() {
@@ -34,7 +34,7 @@ function main() {
 // --->....y = 7;
 
     var x = 5,
-        y = 7;         /*error Mixed spaces and tabs.*/
+        y = 7;
 }
 ```
 

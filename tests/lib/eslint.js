@@ -880,6 +880,23 @@ describe("eslint", function() {
             assert.equal(messages[0].message, "message {{parameter}}");
         });
 
+        it("should ignore template parameter with no specified value with warn severity", function() {
+            eslint.reset();
+            eslint.defineRule("test-rule", function(context) {
+                return {
+                    "Literal": function(node) {
+                        context.report(node, "message {{parameter}}", {});
+                    }
+                };
+            });
+
+            config.rules["test-rule"] = "warn";
+
+            var messages = eslint.verify("0", config);
+            assert.equal(messages[0].severity, 1);
+            assert.equal(messages[0].message, "message {{parameter}}");
+        });
+
         it("should handle leading whitespace in template parameter", function() {
             eslint.reset();
             eslint.defineRule("test-rule", function(context) {
@@ -1083,6 +1100,41 @@ describe("eslint", function() {
 
     });
 
+    describe("when config has parser", function() {
+
+        // custom parser unsupported in browser, only test in Node
+        if (typeof window === "undefined") {
+            it("should pass parser as parserPath to all rules when provided on config", function() {
+
+                var alternateParser = "esprima-fb";
+
+                eslint.reset();
+                eslint.defineRule("test-rule", sandbox.mock().withArgs(
+                    sinon.match({parserPath: alternateParser})
+                ).returns({}));
+
+                var config = { rules: { "test-rule": 2 }, parser: alternateParser };
+
+                eslint.verify("0", config, filename);
+            });
+        }
+
+        it("should pass parser as parserPath to all rules when default parser is used", function() {
+
+            var DEFAULT_PARSER = eslint.defaults().parser;
+
+            eslint.reset();
+            eslint.defineRule("test-rule", sandbox.mock().withArgs(
+                sinon.match({parserPath: DEFAULT_PARSER})
+            ).returns({}));
+
+            var config = { rules: { "test-rule": 2 } };
+
+            eslint.verify("0", config, filename);
+        });
+
+    });
+
 
     describe("when passing in configuration values for rules", function() {
         var code = "var answer = 6 * 7";
@@ -1100,6 +1152,20 @@ describe("eslint", function() {
             assert.equal(messages[0].ruleId, rule);
         });
 
+        it("should be configurable by only setting the string value", function() {
+            var rule = "semi",
+                config = { rules: {} };
+
+            config.rules[rule] = "warn";
+            eslint.reset();
+
+            var messages = eslint.verify(code, config, filename, true);
+
+            assert.equal(messages.length, 1);
+            assert.equal(messages[0].severity, 1);
+            assert.equal(messages[0].ruleId, rule);
+        });
+
         it("should be configurable by passing in values as an array", function() {
             var rule = "semi",
                 config = { rules: {} };
@@ -1110,6 +1176,20 @@ describe("eslint", function() {
             var messages = eslint.verify(code, config, filename, true);
 
             assert.equal(messages.length, 1);
+            assert.equal(messages[0].ruleId, rule);
+        });
+
+        it("should be configurable by passing in string value as an array", function() {
+            var rule = "semi",
+                config = { rules: {} };
+
+            config.rules[rule] = ["warn"];
+            eslint.reset();
+
+            var messages = eslint.verify(code, config, filename, true);
+
+            assert.equal(messages.length, 1);
+            assert.equal(messages[0].severity, 1);
             assert.equal(messages[0].ruleId, rule);
         });
 
@@ -1665,6 +1745,7 @@ describe("eslint", function() {
     });
 
     describe("when evaluating code with comments to disable and enable configurable rule as part of plugin", function() {
+
         eslint.defineRule("test-plugin/test-rule", function(context) {
             return {
                 "Literal": function(node) {
@@ -1675,7 +1756,7 @@ describe("eslint", function() {
             };
         });
 
-        it("should not report a violation", function() {
+        it("should not report a violation when inline comment enables plugin rule and there's no violation", function() {
             var config = { rules: {} };
             var code = "/*eslint test-plugin/test-rule: 2*/ var a = \"no violation\";";
 
@@ -1684,7 +1765,7 @@ describe("eslint", function() {
             assert.equal(messages.length, 0);
         });
 
-        it("should not report a violation", function() {
+        it("should not report a violation when inline comment disables plugin rule", function() {
             var code = "/*eslint test-plugin/test-rule:0*/ var a = \"trigger violation\"";
             var config = { rules: { "test-plugin/test-rule": 1 } };
 
@@ -1801,74 +1882,213 @@ describe("eslint", function() {
 
     describe("when evaluating code with comments to ignore reporting on of specific rules on a specific line", function() {
 
-        it("should report a violation", function() {
-            var code = [
-                "alert('test'); // eslint-disable-line no-alert",
-                "console.log('test');" // here
-            ].join("\n");
-            var config = {
-                rules: {
-                    "no-alert": 1,
-                    "no-console": 1
-                }
-            };
+        describe("eslint-disable-line", function() {
+            it("should report a violation", function() {
+                var code = [
+                    "alert('test'); // eslint-disable-line no-alert",
+                    "console.log('test');" // here
+                ].join("\n");
+                var config = {
+                    rules: {
+                        "no-alert": 1,
+                        "no-console": 1
+                    }
+                };
 
-            var messages = eslint.verify(code, config, filename);
-            assert.equal(messages.length, 1);
+                var messages = eslint.verify(code, config, filename);
+                assert.equal(messages.length, 1);
 
-            assert.equal(messages[0].ruleId, "no-console");
+                assert.equal(messages[0].ruleId, "no-console");
+            });
+
+            it("should report a violation", function() {
+                var code = [
+                    "alert('test'); // eslint-disable-line no-alert",
+                    "console.log('test'); // eslint-disable-line no-console",
+                    "alert('test');" // here
+                ].join("\n");
+                var config = {
+                    rules: {
+                        "no-alert": 1,
+                        "no-console": 1
+                    }
+                };
+
+                var messages = eslint.verify(code, config, filename);
+                assert.equal(messages.length, 1);
+
+                assert.equal(messages[0].ruleId, "no-alert");
+            });
+
+            it("should report a violation", function() {
+                var code = [
+                    "alert('test'); // eslint-disable-line no-alert",
+                    "alert('test'); /*eslint-disable-line no-alert*/" // here
+                ].join("\n");
+                var config = {
+                    rules: {
+                        "no-alert": 1
+                    }
+                };
+
+                var messages = eslint.verify(code, config, filename);
+                assert.equal(messages.length, 1);
+
+                assert.equal(messages[0].ruleId, "no-alert");
+            });
+
+            it("should not report a violation", function() {
+                var code = [
+                    "alert('test'); // eslint-disable-line no-alert",
+                    "console('test'); // eslint-disable-line no-console"
+                ].join("\n");
+                var config = {
+                    rules: {
+                        "no-alert": 1,
+                        "no-console": 1
+                    }
+                };
+
+                var messages = eslint.verify(code, config, filename);
+                assert.equal(messages.length, 0);
+            });
+
+            it("should not report a violation", function() {
+                var code = [
+                    "alert('test') // eslint-disable-line no-alert, quotes, semi",
+                    "console('test'); // eslint-disable-line"
+                ].join("\n");
+                var config = {
+                    rules: {
+                        "no-alert": 1,
+                        "quotes": [1, "double"],
+                        "semi": [1, "always"],
+                        "no-console": 1
+                    }
+                };
+
+                var messages = eslint.verify(code, config, filename);
+                assert.equal(messages.length, 0);
+            });
         });
 
-        it("should report a violation", function() {
-            var code = [
-                "alert('test'); // eslint-disable-line no-alert",
-                "console.log('test'); // eslint-disable-line no-console",
-                "alert('test');" // here
-            ].join("\n");
-            var config = {
-                rules: {
-                    "no-alert": 1,
-                    "no-console": 1
-                }
-            };
+        describe("eslint-disable-next-line", function() {
+            it("should ignore violation of specified rule on next line", function() {
+                var code = [
+                    "// eslint-disable-next-line no-alert",
+                    "alert('test');",
+                    "console.log('test');"
+                ].join("\n");
+                var config = {
+                    rules: {
+                        "no-alert": 1,
+                        "no-console": 1
+                    }
+                };
+                var messages = eslint.verify(code, config, filename);
 
-            var messages = eslint.verify(code, config, filename);
-            assert.equal(messages.length, 1);
+                assert.equal(messages.length, 1);
+                assert.equal(messages[0].ruleId, "no-console");
+            });
 
-            assert.equal(messages[0].ruleId, "no-alert");
-        });
+            it("should ignore violations only of specified rule", function() {
+                var code = [
+                    "// eslint-disable-next-line no-console",
+                    "alert('test');",
+                    "console.log('test');"
+                ].join("\n");
+                var config = {
+                    rules: {
+                        "no-alert": 1,
+                        "no-console": 1
+                    }
+                };
+                var messages = eslint.verify(code, config, filename);
 
-        it("should report a violation", function() {
-            var code = [
-                "alert('test'); // eslint-disable-line no-alert",
-                "alert('test'); /*eslint-disable-line no-alert*/" // here
-            ].join("\n");
-            var config = {
-                rules: {
-                    "no-alert": 1
-                }
-            };
+                assert.equal(messages.length, 2);
+                assert.equal(messages[0].ruleId, "no-alert");
+                assert.equal(messages[1].ruleId, "no-console");
+            });
 
-            var messages = eslint.verify(code, config, filename);
-            assert.equal(messages.length, 1);
+            it("should ignore violations of multiple rules when specified", function() {
+                var code = [
+                    "// eslint-disable-next-line no-alert, quotes",
+                    "alert(\"test\");",
+                    "console.log('test');"
+                ].join("\n");
+                var config = {
+                    rules: {
+                        "no-alert": 1,
+                        "quotes": [1, "single"],
+                        "no-console": 1
+                    }
+                };
+                var messages = eslint.verify(code, config, filename);
 
-            assert.equal(messages[0].ruleId, "no-alert");
-        });
+                assert.equal(messages.length, 1);
+                assert.equal(messages[0].ruleId, "no-console");
+            });
 
-        it("should not report a violation", function() {
-            var code = [
-                "alert('test'); // eslint-disable-line no-alert",
-                "console('test'); // eslint-disable-line no-console"
-            ].join("\n");
-            var config = {
-                rules: {
-                    "no-alert": 1,
-                    "no-console": 1
-                }
-            };
+            it("should ignore violations of specified rule on next line only", function() {
+                var code = [
+                    "alert('test');",
+                    "// eslint-disable-next-line no-alert",
+                    "alert('test');",
+                    "console.log('test');"
+                ].join("\n");
+                var config = {
+                    rules: {
+                        "no-alert": 1,
+                        "no-console": 1
+                    }
+                };
+                var messages = eslint.verify(code, config, filename);
 
-            var messages = eslint.verify(code, config, filename);
-            assert.equal(messages.length, 0);
+                assert.equal(messages.length, 2);
+                assert.equal(messages[0].ruleId, "no-alert");
+                assert.equal(messages[1].ruleId, "no-console");
+            });
+
+            it("should ignore all rule violations on next line if none specified", function() {
+                var code = [
+                    "// eslint-disable-next-line",
+                    "alert(\"test\");",
+                    "console.log('test')"
+                ].join("\n");
+                var config = {
+                    rules: {
+                        "semi": [1, "never"],
+                        "quotes": [1, "single"],
+                        "no-alert": 1,
+                        "no-console": 1
+                    }
+                };
+                var messages = eslint.verify(code, config, filename);
+
+                assert.equal(messages.length, 1);
+                assert.equal(messages[0].ruleId, "no-console");
+            });
+
+            it("should not report if comment is in block quotes", function() {
+                var code = [
+                    "alert('test');",
+                    "/* eslint-disable-next-line no-alert */",
+                    "alert('test');",
+                    "console.log('test');"
+                ].join("\n");
+                var config = {
+                    rules: {
+                        "no-alert": 1,
+                        "no-console": 1
+                    }
+                };
+                var messages = eslint.verify(code, config, filename);
+
+                assert.equal(messages.length, 3);
+                assert.equal(messages[0].ruleId, "no-alert");
+                assert.equal(messages[1].ruleId, "no-alert");
+                assert.equal(messages[2].ruleId, "no-console");
+            });
         });
     });
 
@@ -2014,6 +2234,39 @@ describe("eslint", function() {
             assert.equal(messages[2].line, 9);
 
         });
+
+        it("should report a violation when severity is warn", function() {
+            var code = [
+                "/*eslint-disable no-alert, no-console */",
+                "alert('test');",
+                "console.log('test');",
+
+                "/*eslint-enable no-alert */",
+
+                "alert('test');", // here
+                "console.log('test');",
+
+                "/*eslint-enable no-console */",
+
+                "alert('test');", // here
+                "console.log('test');", // here
+                "/*eslint-enable no-console */"
+            ].join("\n");
+            var config = { rules: { "no-alert": "warn", "no-console": "warn" } };
+
+            var messages = eslint.verify(code, config, filename);
+            assert.equal(messages.length, 3);
+
+            assert.equal(messages[0].ruleId, "no-alert");
+            assert.equal(messages[0].line, 5);
+
+            assert.equal(messages[1].ruleId, "no-alert");
+            assert.equal(messages[1].line, 8);
+
+            assert.equal(messages[2].ruleId, "no-console");
+            assert.equal(messages[2].line, 9);
+
+        });
     });
 
     describe("when evaluating code with comments to enable and disable multiple comma separated rules", function() {
@@ -2032,6 +2285,20 @@ describe("eslint", function() {
 
     describe("when evaluating code with comments to enable configurable rule", function() {
         var code = "/*eslint quotes:[2, \"double\"]*/ alert('test');";
+
+        it("should report a violation", function() {
+            var config = { rules: { "quotes": [2, "single"] } };
+
+            var messages = eslint.verify(code, config, filename);
+            assert.equal(messages.length, 1);
+            assert.equal(messages[0].ruleId, "quotes");
+            assert.equal(messages[0].message, "Strings must use doublequote.");
+            assert.include(messages[0].nodeType, "Literal");
+        });
+    });
+
+    describe("when evaluating code with comments to enable configurable rule using string severity", function() {
+        var code = "/*eslint quotes:[\"error\", \"double\"]*/ alert('test');";
 
         it("should report a violation", function() {
             var config = { rules: { "quotes": [2, "single"] } };
@@ -2159,6 +2426,25 @@ describe("eslint", function() {
             var messages = eslint.verify(code);
             assert.equal(messages.length, 1);
             assert.equal(messages[0].severity, 2);
+            assert.isNull(messages[0].ruleId);
+            assert.equal(messages[0].source, BROKEN_TEST_CODE);
+            assert.equal(messages[0].line, 1);
+            assert.equal(messages[0].column, 4);
+            assert.isTrue(messages[0].fatal);
+            assert.match(messages[0].message, /^Parsing error:/);
+        });
+
+        it("should report source code where the issue is present", function() {
+            var inValidCode = [
+                "var x = 20;",
+                "if (x ==4 {",
+                "    x++;",
+                "}"
+            ];
+            var messages = eslint.verify(inValidCode.join("\n"));
+            assert.equal(messages.length, 1);
+            assert.equal(messages[0].severity, 2);
+            assert.equal(messages[0].source, inValidCode[1]);
             assert.isTrue(messages[0].fatal);
             assert.match(messages[0].message, /^Parsing error:/);
         });
@@ -2681,6 +2967,40 @@ describe("eslint", function() {
             assert.equal(messages[0].message, "Parsing error: 'return' outside of function");
         });
 
+        it("should properly parse sloppy-mode code when impliedStrict is false", function() {
+
+            var messages = eslint.verify("var private;", {}, filename);
+
+            assert.equal(messages.length, 0);
+        });
+
+        it("should not parse sloppy-mode code when impliedStrict is true", function() {
+
+            var messages = eslint.verify("var private;", {
+                parserOptions: {
+                    ecmaFeatures: {
+                        impliedStrict: true
+                    }
+                }
+            }, filename);
+
+            assert.equal(messages.length, 1);
+            assert.equal(messages[0].message, "Parsing error: The keyword 'private' is reserved");
+        });
+
+        it("should properly parse valid code when impliedStrict is true", function() {
+
+            var messages = eslint.verify("var foo;", {
+                parserOptions: {
+                    ecmaFeatures: {
+                        impliedStrict: true
+                    }
+                }
+            }, filename);
+
+            assert.equal(messages.length, 0);
+        });
+
         it("should properly parse JSX when passed ecmaFeatures", function() {
 
             var messages = eslint.verify("var x = <div/>;", {
@@ -2700,7 +3020,7 @@ describe("eslint", function() {
 
             assert.equal(messages.length, 1);
             assert.equal(messages[0].line, 1);
-            assert.equal(messages[0].column, 21);
+            assert.equal(messages[0].column, 20);
             assert.equal(messages[0].message, "Parsing error: Unexpected token <");
         });
 
@@ -2794,6 +3114,11 @@ describe("eslint", function() {
 
             eslint.verify(code, {rules: {test: 2}});
             assert(ok);
+        });
+
+        it("should not crash when we reuse the SourceCode object", function() {
+            eslint.verify("function render() { return <div className='test'>{hello}</div> }", { parserOptions: { ecmaVersion: 6, ecmaFeatures: {jsx: true} }});
+            eslint.verify(eslint.getSourceCode(), { parserOptions: { ecmaVersion: 6, ecmaFeatures: {jsx: true} }});
         });
     });
 
@@ -3172,6 +3497,36 @@ describe("eslint", function() {
             eslint.verify("var { a='a' } = {};", { parserOptions: { ecmaVersion: 6 }});
         });
 
+        it("should not rewrite env setting in core (https://github.com/eslint/eslint/issues/4814)", function() {
+            // This test focuses on the instance of https://github.com/eslint/eslint/blob/v2.0.0-alpha-2/conf/environments.js#L26-L28
+
+            // This `verify()` takes the instance and runs https://github.com/eslint/eslint/blob/v2.0.0-alpha-2/lib/eslint.js#L416
+            eslint.defineRule("test", function() {
+                return {};
+            });
+            eslint.verify("var a = 0;", {
+                env: {node: true},
+                parserOptions: {sourceType: "module"},
+                rules: {test: 2}
+            });
+
+            // This `verify()` takes the instance and tests that the instance was not modified.
+            var ok = false;
+            eslint.defineRule("test", function(context) {
+                assert(
+                    context.parserOptions.ecmaFeatures.globalReturn,
+                    "`ecmaFeatures.globalReturn` of the node environment should not be modified."
+                );
+                ok = true;
+                return {};
+            });
+            eslint.verify("var a = 0;", {
+                env: {node: true},
+                rules: {test: 2}
+            });
+
+            assert(ok);
+        });
     });
 
     // only test in Node.js, not browser
@@ -3201,6 +3556,7 @@ describe("eslint", function() {
                 var messages = eslint.verify(";", { parser: parser }, "filename");
                 assert.equal(messages.length, 1);
                 assert.equal(messages[0].severity, 2);
+                assert.isNull(messages[0].source);
                 assert.equal(messages[0].message, errorPrefix + require(parser).expectedError);
             });
 

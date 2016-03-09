@@ -8,7 +8,7 @@ Rather than creating separate rules for every language feature you want to turn 
 
 This rule is aimed at eliminating certain syntax from your JavaScript. As such, it warns whenever it sees a node type that is restricted by its options.
 
-### Options
+## Options
 
 This rule takes a list of strings where strings denote the node types:
 
@@ -25,11 +25,11 @@ The following patterns are considered problems:
 ```js
 /* eslint no-restricted-syntax: [2, "FunctionExpression", "WithStatement"] */
 
-with (me) {                       /*error Using "WithStatement" is not allowed.*/
+with (me) {
     dontMess();
 }
 
-var doSomething = function () {}; /*error Using "FunctionExpression" is not allowed.*/
+var doSomething = function () {};
 ```
 
 The following patterns are not considered problems:

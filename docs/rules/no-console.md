@@ -12,22 +12,36 @@ console.error("That shouldn't have happened.");
 
 This rule is aimed at eliminating unwanted `console` references from your JavaScript. As such, it warns whenever it sees `console` used as an identifier in code.
 
-The following patterns are considered problems:
+Examples of **incorrect** code for this rule:
 
 ```js
 /*eslint no-console: 2*/
 
-console.log("Hello world!");              /*error Unexpected console statement.*/
-console.error("Something bad happened."); /*error Unexpected console statement.*/
+console.log("Hello world!");
+console.error("Something bad happened.");
 ```
 
-The following patterns are not considered problems:
+Examples of **correct** code for this rule:
 
 ```js
 /*eslint no-console: 2*/
 
 // custom console
 Console.log("Hello world!");
+```
+
+## Options
+
+This rule supports the following options:
+
+`allow`: The list of console operations to be used as exceptions to the rule. For example:
+
+```js
+/*eslint no-console: [2, { allow: ["warn", "error"] }] */
+
+console.log("this will be considered a problem");
+console.warn("this will not be considered a problem");
+console.error("this will not be considered a problem");
 ```
 
 ## When Not To Use It

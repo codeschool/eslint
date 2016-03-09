@@ -49,9 +49,9 @@ Each of the following properties would warn:
 /*eslint-env es6*/
 
 var foo = {
-    x: function() {},   /*error Expected method shorthand.*/
-    y: function *() {}, /*error Expected method shorthand.*/
-    z: z                /*error Expected property shorthand.*/
+    x: function() {},
+    y: function *() {},
+    z: z
 };
 ```
 
@@ -80,15 +80,15 @@ var foo = {
 };
 ```
 
-### Options
+## Options
 
 The rule takes an option which specifies when it should be applied. It can be set to
 "always", "properties", "methods", or "never". The default is "always".
 
-1. `"always"` expects that the shorthand will be used whenever possible.
-2. `"methods"` ensures the method shorthand is used (also applies to generators).
-3. `"properties` ensures the property shorthand is used (where the key and variable name match).
-4. `"never"` ensures that no property or method shorthand is used in any object literal.
+* `"always"` expects that the shorthand will be used whenever possible.
+* `"methods"` ensures the method shorthand is used (also applies to generators).
+* `"properties` ensures the property shorthand is used (where the key and variable name match).
+* `"never"` ensures that no property or method shorthand is used in any object literal.
 
 You can set the option in configuration like this:
 
@@ -98,7 +98,7 @@ You can set the option in configuration like this:
 }
 ```
 
-While set to "always" or "methods", constructor functions can be ignored with the optional parameter "ignoreConstructors" enabled. Note: The first parameter must be specified when using this optional parameter.
+While set to `"always"` or `"methods"`, constructor functions can be ignored with the optional parameter `"ignoreConstructors"` enabled. Note: The first parameter must be specified when using this optional parameter.
 
 ```json
 {
@@ -106,7 +106,7 @@ While set to "always" or "methods", constructor functions can be ignored with th
 }
 ```
 
-The following will *not* warn when "ignoreConstructors" is enabled:
+The following will *not* warn when `"ignoreConstructors"` is enabled:
 
 ```js
 /*eslint object-shorthand: [2, "always", { "ignoreConstructors": true }]*/

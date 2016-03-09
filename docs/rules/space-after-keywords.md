@@ -1,5 +1,7 @@
 # Require or disallow spaces following keywords (space-after-keywords)
 
+**Replacement notice**: This rule was removed in ESLint v2.0 and replaced by [keyword-spacing](keyword-spacing.md) rule.
+
 Some style guides will require or disallow spaces following the certain keywords.
 
 ```js
@@ -30,17 +32,17 @@ The following patterns are considered problems:
 ```js
 /*eslint space-after-keywords: 2*/
 
-if(a) {}         /*error Keyword "if" must be followed by whitespace.*/
+if(a) {}
 
-if (a) {} else{} /*error Keyword "else" must be followed by whitespace.*/
+if (a) {} else{}
 
-do{} while (a);  /*error Keyword "do" must be followed by whitespace.*/
+do{} while (a);
 ```
 
 ```js
 /*eslint space-after-keywords: [2, "never"]*/
 
-if (a) {}        /*error Keyword "if" must not be followed by whitespace.*/
+if (a) {}
 ```
 
 The following patterns are not considered problems:

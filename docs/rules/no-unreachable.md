@@ -14,28 +14,28 @@ function fn() {
 
 This rule is aimed at detecting unreachable code. It produces an error when a statements exist after a `return`, `throw`, `break`, or `continue` statement.
 
-The following are considered problems:
+Examples of **incorrect** code for this rule:
 
 ```js
 /*eslint no-unreachable: 2*/
 
 function foo() {
     return true;
-    console.log("done");      /*error Unreachable code.*/
+    console.log("done");
 }
 
 function bar() {
     throw new Error("Oops!");
-    console.log("done");      /*error Unreachable code.*/
+    console.log("done");
 }
 
 while(value) {
     break;
-    console.log("done");      /*error Unreachable code.*/
+    console.log("done");
 }
 
 throw new Error("Oops!");
-console.log("done");          /*error Unreachable code.*/
+console.log("done");
 
 function baz() {
     if (Math.random() < 0.5) {
@@ -43,14 +43,14 @@ function baz() {
     } else {
         throw new Error();
     }
-    console.log("done");      /*error Unreachable code.*/
+    console.log("done");
 }
 
 for (;;) {}
-console.log("done");          /*error Unreachable code.*/
+console.log("done");
 ```
 
-The following patterns are not considered problems (due to JavaScript function and variable hoisting):
+Examples of **correct** code for this rule, because of JavaScript function and variable hoisting:
 
 ```js
 /*eslint no-unreachable: 2*/

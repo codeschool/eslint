@@ -2,8 +2,8 @@
  * @fileoverview Build file
  * @author nzakas
  */
-/* global cat, cd, cp, echo, exec, exit, find, ls, mkdir, mv, pwd, rm, target, test*/
-
+/* global cat, cd, cp, echo, exec, exit, find, ls, mkdir, pwd, rm, target, test*/
+/* eslint no-use-before-define: 0*/
 "use strict";
 
 //------------------------------------------------------------------------------
@@ -12,9 +12,12 @@
 
 require("shelljs/make");
 
-var checker = require("npm-license"),
+var lodash = require("lodash"),
+    checker = require("npm-license"),
+    ReleaseOps = require("eslint-release"),
     dateformat = require("dateformat"),
     fs = require("fs"),
+    glob = require("glob"),
     markdownlint = require("markdownlint"),
     nodeCLI = require("shelljs-nodecli"),
     os = require("os"),
@@ -28,12 +31,12 @@ var checker = require("npm-license"),
 //------------------------------------------------------------------------------
 
 /*
- * A little bit fuzzy. My computer has a first CPU speed of 3093 and the perf test
- * always completes in < 2000ms. However, Travis is less predictable due to
+ * A little bit fuzzy. My computer has a first CPU speed of 3392 and the perf test
+ * always completes in < 3800ms. However, Travis is less predictable due to
  * multiple different VM types. So I'm fudging this for now in the hopes that it
  * at least provides some sort of useful signal.
  */
-var PERF_MULTIPLIER = 7.5e6;
+var PERF_MULTIPLIER = 13e6;
 
 var OPEN_SOURCE_LICENSES = [
     /MIT/, /BSD/, /Apache/, /ISC/, /WTF/, /Public Domain/
@@ -49,6 +52,7 @@ var NODE = "node ", // intentional extra space
     BUILD_DIR = "./build/",
     DOCS_DIR = "../eslint.github.io/docs",
     SITE_DIR = "../eslint.github.io/",
+    PERF_TMP_DIR = path.join(os.tmpdir(), "eslint", "performance"),
 
     // Utilities - intentional extra space at the end of each string
     MOCHA = NODE_MODULES + "mocha/bin/_mocha ",
@@ -56,24 +60,57 @@ var NODE = "node ", // intentional extra space
 
     // Files
     MAKEFILE = "./Makefile.js",
-    PACKAGE = "./package.json",
-    /* eslint-disable no-use-before-define */
     JS_FILES = find("lib/").filter(fileType("js")).join(" "),
-    JSON_FILES = find("conf/").filter(fileType("json")).join(" ") + " .eslintrc",
+    JSON_FILES = find("conf/").filter(fileType("json")),
     MARKDOWN_FILES_ARRAY = find("docs/").concat(ls(".")).filter(fileType("md")),
-    TEST_FILES = find("tests/lib/").filter(fileType("js")).join(" "),
-    /* eslint-enable no-use-before-define */
+    TEST_FILES = getTestFilePatterns(),
+    PERF_ESLINTRC = path.join(PERF_TMP_DIR, "eslintrc.yml"),
+    PERF_MULTIFILES_TARGET_DIR = path.join(PERF_TMP_DIR, "eslint"),
+    PERF_MULTIFILES_TARGETS = PERF_MULTIFILES_TARGET_DIR + path.sep + "{lib,tests" + path.sep + "lib}" + path.sep + "**" + path.sep + "*.js",
 
     // Regex
     TAG_REGEX = /^(?:Fix|Update|Breaking|Docs|Build|New|Upgrade):/,
     ISSUE_REGEX = /\((?:fixes|refs) #\d+(?:.*(?:fixes|refs) #\d+)*\)$/,
 
     // Settings
-    MOCHA_TIMEOUT = 4000;
+    MOCHA_TIMEOUT = 10000;
 
 //------------------------------------------------------------------------------
 // Helpers
 //------------------------------------------------------------------------------
+
+/**
+ * Generates file patterns for test files
+ * @returns {string} test file patterns
+ * @private
+ */
+function getTestFilePatterns() {
+    var testLibPath = "tests/lib/",
+        testTemplatesPath = "tests/templates/";
+
+    return ls(testLibPath).filter(function(pathToCheck) {
+        return test("-d", testLibPath + pathToCheck);
+    }).reduce(function(initialValue, currentValues) {
+        if (currentValues !== "rules") {
+            initialValue.push(testLibPath + currentValues + "/**/*.js");
+        }
+        return initialValue;
+    }, [testLibPath + "rules/**/*.js", testLibPath + "*.js", testTemplatesPath + "*.js"]).join(" ");
+}
+
+/**
+ * Simple JSON file validation that relies on ES JSON parser.
+ * @param {string} filePath Path to JSON.
+ * @throws Error If file contents is invalid JSON.
+ * @returns {undefined}
+ */
+function validateJsonFile(filePath) {
+    var contents;
+
+    contents = fs.readFileSync(filePath, "utf8");
+
+    JSON.parse(contents);
+}
 
 /**
  * Generates a function that matches files with a particular extension.
@@ -85,15 +122,6 @@ function fileType(extension) {
     return function(filename) {
         return filename.substring(filename.lastIndexOf(".") + 1) === extension;
     };
-}
-
-/**
- * Returns package.json contents as a JavaScript object
- * @returns {Object} Contents of package.json for the project
- * @private
- */
-function getPackageInfo() {
-    return JSON.parse(fs.readFileSync(PACKAGE));
 }
 
 /**
@@ -137,7 +165,7 @@ function generateBlogPost(releaseInfo) {
         day = now.getDate(),
         filename = "../eslint.github.io/_posts/" + now.getFullYear() + "-" +
             (month < 10 ? "0" + month : month) + "-" +
-            (day < 10 ? "0" + day : day) + "-eslint-" + releaseInfo.version +
+            (day < 10 ? "0" + day : day) + "-eslint-v" + releaseInfo.version +
             "-released.md";
 
     output.to(filename);
@@ -146,94 +174,57 @@ function generateBlogPost(releaseInfo) {
 /**
  * Generates a doc page with formatter result examples
  * @param  {Object} formatterInfo Linting results from each formatter
+ * @param  {string} [prereleaseVersion] The version used for a prerelease. This
+ *      changes where the output is stored.
  * @returns {void}
  */
-function generateFormatterExamples(formatterInfo) {
+function generateFormatterExamples(formatterInfo, prereleaseVersion) {
     var output = ejs.render(cat("./templates/formatter-examples.md.ejs"), formatterInfo),
         filename = "../eslint.github.io/docs/user-guide/formatters/index.md",
         htmlFilename = "../eslint.github.io/docs/user-guide/formatters/html-formatter-example.html";
+
+    if (prereleaseVersion) {
+        filename = filename.replace("/docs", "/docs/" + prereleaseVersion);
+        htmlFilename = htmlFilename.replace("/docs", "/docs/" + prereleaseVersion);
+    }
 
     output.to(filename);
     formatterInfo.formatterResults.html.result.to(htmlFilename);
 }
 
 /**
- * Given a semver version, determine the type of version.
- * @param {string} version A semver version string.
- * @returns {string} The type of version.
- * @private
- */
-function getReleaseType(version) {
-
-    if (semver.patch(version) > 0) {
-        return "patch";
-    } else if (semver.minor(version) > 0) {
-        return "minor";
-    } else {
-        return "major";
-    }
-}
-
-/**
  * Creates a release version tag and pushes to origin.
- * @param {string} type The type of release to do (patch, minor, major)
  * @returns {void}
  */
-function release(type) {
-    var newVersion;/* , changes;*/
+function release() {
 
-    exec("git checkout master && git fetch origin && git reset --hard origin/master");
-    exec("npm install && npm prune");
-
-    target.test();
-    echo("Generating new version");
-    newVersion = execSilent("npm version " + type).trim();
-
-    echo("Generating changelog");
-    var releaseInfo = target.changelog();
-
-    // add changelog to commit
-    exec("git add CHANGELOG.md");
-    exec("git commit --amend --no-edit");
-
-    // replace existing tag
-    exec("git tag -f " + newVersion);
-
-    // push all the things
-    echo("Publishing to git");
-    exec("git push origin master --tags");
-
-    // now push the changelog...changes to the tag
-    // echo("Publishing changes to github release");
-    // this requires a github API token in process.env.ESLINT_GITHUB_TOKEN
-    // it will continue with an error message logged if not set
-    // ghGot("repos/eslint/eslint/releases", {
-    //     body: JSON.stringify({
-    //         tag_name: newVersion,
-    //         name: newVersion,
-    //         target_commitish: "master",
-    //         body: changes
-    //     }),
-    //     method: "POST",
-    //     json: true,
-    //     token: process.env.ESLINT_GITHUB_TOKEN
-    // }, function(pubErr) {
-    //     if (pubErr) {
-    //         echo("Warning: error when publishing changes to github release: " + pubErr.message);
-    //     }
-    echo("Publishing to npm");
-    getPackageInfo().files.filter(function(dirPath) {
-        return fs.lstatSync(dirPath).isDirectory();
-    }).forEach(nodeCLI.exec.bind(nodeCLI, "linefix"));
-    exec("npm publish");
-    exec("git reset --hard");
+    var releaseInfo = ReleaseOps.release();
 
     echo("Generating site");
     target.gensite();
     generateBlogPost(releaseInfo);
     target.publishsite();
-    // });
+
+    echo("Site has been published");
 }
+
+/**
+ * Creates a prerelease version tag and pushes to origin.
+ * @param {string} prereleaseId The prerelease identifier (alpha, beta, etc.)
+ * @returns {void}
+ */
+function prerelease(prereleaseId) {
+
+    var releaseInfo = ReleaseOps.release(prereleaseId);
+
+    echo("Generating site");
+
+    // always write docs into the next major directory (so 2.0.0-alpha.0 writes to 2.0.0)
+    target.gensite(semver.inc(releaseInfo.version, "major"));
+    generateBlogPost(releaseInfo);
+    echo("Site has not been pushed, please update blog post and push manually.");
+}
+
 
 /**
  * Splits a command result to separate lines.
@@ -314,22 +305,6 @@ function getFirstVersionOfDeletion(filePath) {
         .sort(semver.compare)[0];
 }
 
-
-/**
- * Returns the version tags
- * @returns {string[]} Tags
- * @private
- */
-function getVersionTags() {
-    var tags = splitCommandResultToLines(execSilent("git tag"));
-
-    return tags.reduce(function(list, tag) {
-        if (semver.valid(tag)) {
-            list.push(tag);
-        }
-        return list;
-    }, []).sort(semver.compare);
-}
 
 /**
  * Returns all the branch names
@@ -471,10 +446,7 @@ target.lint = function() {
     }
 
     echo("Validating JSON Files");
-    lastReturn = nodeCLI.exec("jsonlint", "-q -c", JSON_FILES);
-    if (lastReturn.code !== 0) {
-        errors++;
-    }
+    lodash.forEach(JSON_FILES, validateJsonFile);
 
     echo("Validating Markdown Files");
     lastReturn = lintMarkdown(MARKDOWN_FILES_ARRAY);
@@ -537,7 +509,7 @@ target.docs = function() {
     echo("Documentation has been output to /jsdoc");
 };
 
-target.gensite = function() {
+target.gensite = function(prereleaseVersion) {
     echo("Generating eslint.org");
 
     var docFiles = [
@@ -549,6 +521,13 @@ target.gensite = function() {
         "/developer-guide/working-with-plugins.md",
         "/developer-guide/working-with-rules.md"
     ];
+
+    // append version
+    if (prereleaseVersion) {
+        docFiles = docFiles.map(function(docFile) {
+            return "/" + prereleaseVersion + docFile;
+        });
+    }
 
     // 1. create temp and build directory
     if (!test("-d", TEMP_DIR)) {
@@ -597,9 +576,9 @@ target.gensite = function() {
 
             // 5. Prepend page title and layout variables at the top of rules
             if (path.dirname(filename).indexOf("rules") >= 0) {
-                text = "---\ntitle: " + (ruleName === "README" ? "List of available rules" : "Rule " + ruleName) + "\nlayout: doc\n---\n<!-- Note: No pull requests accepted for this file. See README.md in the root directory for details. -->\n" + text;
+                text = "---\ntitle: " + (ruleName === "README" ? "List of available rules" : "Rule " + ruleName) + "\nlayout: doc\n---\n<!-- Note: No pull requests accepted for this file. See README.md in the root directory for details. -->\n\n" + text;
             } else {
-                text = "---\ntitle: Documentation\nlayout: doc\n---\n<!-- Note: No pull requests accepted for this file. See README.md in the root directory for details. -->\n" + text;
+                text = "---\ntitle: Documentation\nlayout: doc\n---\n<!-- Note: No pull requests accepted for this file. See README.md in the root directory for details. -->\n\n" + text;
             }
 
             // 6. Remove .md extension for links and change README to empty string
@@ -643,18 +622,23 @@ target.gensite = function() {
     JSON.stringify(versions).to("./versions.json");
 
     // 10. Copy temorary directory to site's docs folder
-    cp("-rf", TEMP_DIR + "*", DOCS_DIR);
+    var outputDir = DOCS_DIR;
+    if (prereleaseVersion) {
+        outputDir += "/" + prereleaseVersion;
+    }
+    cp("-rf", TEMP_DIR + "*", outputDir);
 
     // 11. Delete temporary directory
     rm("-r", TEMP_DIR);
 
-    // 12. Browserify ESLint
-    target.browserify();
-    cp("-f", "build/eslint.js", SITE_DIR + "js/app/eslint.js");
-    cp("-f", "conf/eslint.json", SITE_DIR + "js/app/eslint.json");
+    // 12. Update demos, but only for non-prereleases
+    if (!prereleaseVersion) {
+        cp("-f", "build/eslint.js", SITE_DIR + "js/app/eslint.js");
+        cp("-f", "conf/eslint.json", SITE_DIR + "js/app/eslint.json");
+    }
 
     // 13. Create Example Formatter Output Page
-    generateFormatterExamples(getFormatterResults());
+    generateFormatterExamples(getFormatterResults(), prereleaseVersion);
 };
 
 target.publishsite = function() {
@@ -701,52 +685,6 @@ target.browserify = function() {
     rm("-r", TEMP_DIR);
 };
 
-target.changelog = function() {
-
-    // get most recent two tags
-    var tags = getVersionTags(),
-        rangeTags = tags.slice(tags.length - 2),
-        now = new Date(),
-        timestamp = dateformat(now, "mmmm d, yyyy"),
-        releaseInfo = {
-            releaseType: getReleaseType(rangeTags[1]),
-            version: rangeTags[1]
-        };
-
-    // output header
-    (rangeTags[1] + " - " + timestamp + "\n").to("CHANGELOG.tmp");
-
-    // get log statements
-    var logs = execSilent("git log --no-merges --pretty=format:\"* %s (%an)\" " + rangeTags.join("..")).split(/\n/g);
-    logs.shift();   // get rid of version commit
-    logs.forEach(function(log) {
-        var tag = log.substring(2, log.indexOf(":")).toLowerCase();
-
-        if (!releaseInfo["changelog_" + tag]) {
-            releaseInfo["changelog_" + tag] = [];
-        }
-
-        releaseInfo["changelog_" + tag].push(log);
-    });
-
-    var output = logs.join("\n"); // and join it into a string
-    releaseInfo.raw = output;
-
-    logs.push(""); // to create empty lines
-    logs.unshift("");
-
-    // output log statements
-    logs.join("\n").toEnd("CHANGELOG.tmp");
-
-    // switch-o change-o
-    cat("CHANGELOG.tmp", "CHANGELOG.md").to("CHANGELOG.md.tmp");
-    rm("CHANGELOG.tmp");
-    rm("CHANGELOG.md");
-    mv("CHANGELOG.md.tmp", "CHANGELOG.md");
-
-    return releaseInfo;
-};
-
 target.checkRuleFiles = function() {
 
     echo("Validating rules");
@@ -780,7 +718,7 @@ target.checkRuleFiles = function() {
          */
         function isOffInConfig() {
             var rule = eslintConf[basename];
-            return rule === 0 || (rule && rule[0] === 0);
+            return rule === "off" || (rule && rule[0] === "off");
         }
 
         /**
@@ -987,6 +925,45 @@ target.checkGitCommit = function() {
 };
 
 /**
+ * Downloads a repository which has many js files to test performance with multi files.
+ * Here, it's eslint@1.10.3 (450 files)
+ * @param {function} cb - A callback function.
+ * @returns {void}
+ */
+function downloadMultifilesTestTarget(cb) {
+    if (test("-d", PERF_MULTIFILES_TARGET_DIR)) {
+        process.nextTick(cb);
+    } else {
+        mkdir("-p", PERF_MULTIFILES_TARGET_DIR);
+        echo("Downloading the repository of multi-files performance test target.");
+        exec("git clone -b v1.10.3 --depth 1 https://github.com/eslint/eslint.git \"" + PERF_MULTIFILES_TARGET_DIR + "\"", {silent: true}, cb);
+    }
+}
+
+/**
+ * Creates a config file to use performance tests.
+ * This config is turning all core rules on.
+ * @returns {void}
+ */
+function createConfigForPerformanceTest() {
+    var content = [
+        "root: true",
+        "env:",
+        "    node: true",
+        "    es6: true",
+        "rules:"
+    ];
+    content.push.apply(
+        content,
+        ls("lib/rules").map(function(fileName) {
+            return "    " + path.basename(fileName, ".js") + ": 1";
+        })
+    );
+
+    content.join("\n").to(PERF_ESLINTRC);
+}
+
+/**
  * Calculates the time for each run for performance
  * @param {string} cmd cmd
  * @param {int} runs Total number of runs to do
@@ -998,12 +975,24 @@ target.checkGitCommit = function() {
  */
 function time(cmd, runs, runNumber, results, cb) {
     var start = process.hrtime();
-    exec(cmd, { silent: true }, function() {
+    exec(cmd, { silent: true }, function(code, stdout, stderr) {
         var diff = process.hrtime(start),
             actual = (diff[0] * 1e3 + diff[1] / 1e6); // ms
 
+        if (code) {
+            echo("  Performance Run #" + runNumber + " failed.");
+            if (stdout) {
+                echo("STDOUT:\n" + stdout + "\n\n");
+            }
+
+            if (stderr) {
+                echo("STDERR:\n" + stderr + "\n\n");
+            }
+            return cb(null);
+        }
+
         results.push(actual);
-        echo("Performance Run #" + runNumber + ":  %dms", actual);
+        echo("  Performance Run #" + runNumber + ":  %dms", actual);
         if (runs > 1) {
             return time(cmd, runs - 1, runNumber + 1, results, cb);
         } else {
@@ -1014,60 +1003,106 @@ function time(cmd, runs, runNumber, results, cb) {
 }
 
 /**
- * Run the load performance for eslint
+ * Run a performance test.
+ *
+ * @param {string} title - A title.
+ * @param {string} targets - Test targets.
+ * @param {number} multiplier - A multiplier for limitation.
+ * @param {function} cb - A callback function.
  * @returns {void}
- * @private
  */
-function loadPerformance() {
-    var results = [];
-    for (var cnt = 0; cnt < 5; cnt++) {
-        var loadPerfData = loadPerf({
-            checkDependencies: false
-        });
-
-        echo("Load performance Run #" + (cnt + 1) + ":  %dms", loadPerfData.loadTime);
-        results.push(loadPerfData.loadTime);
-    }
-    results.sort(function(a, b) {
-        return a - b;
-    });
-    var median = results[~~(results.length / 2)];
-    echo("\nLoad Performance median :  %dms", median);
-}
-
-target.perf = function() {
+function runPerformanceTest(title, targets, multiplier, cb) {
     var cpuSpeed = os.cpus()[0].speed,
-        max = PERF_MULTIPLIER / cpuSpeed,
-        cmd = ESLINT + "--no-ignore ./tests/performance/jshint.js";
+        max = multiplier / cpuSpeed,
+        cmd = ESLINT + "--config \"" + PERF_ESLINTRC + "\" --no-eslintrc --no-ignore " + targets;
 
-    echo("CPU Speed is %d with multiplier %d", cpuSpeed, PERF_MULTIPLIER);
+    echo("");
+    echo(title);
+    echo("  CPU Speed is %d with multiplier %d", cpuSpeed, multiplier);
 
     time(cmd, 5, 1, [], function(results) {
+        if (!results || results.length === 0) {  // No results? Something is wrong.
+            throw new Error("Performance test failed.");
+        }
+
         results.sort(function(a, b) {
             return a - b;
         });
 
         var median = results[~~(results.length / 2)];
 
+        echo("");
         if (median > max) {
-            echo("Performance budget exceeded: %dms (limit: %dms)", median, max);
+            echo("  Performance budget exceeded: %dms (limit: %dms)", median, max);
         } else {
-            echo("Performance budget ok:  %dms (limit: %dms)", median, max);
+            echo("  Performance budget ok:  %dms (limit: %dms)", median, max);
         }
-        echo("\n");
-        loadPerformance();
+        echo("");
+        cb();
     });
+}
 
+/**
+ * Run the load performance for eslint
+ * @returns {void}
+ * @private
+ */
+function loadPerformance() {
+    echo("");
+    echo("Loading:");
+
+    var results = [];
+    for (var cnt = 0; cnt < 5; cnt++) {
+        var loadPerfData = loadPerf({
+            checkDependencies: false
+        });
+
+        echo("  Load performance Run #" + (cnt + 1) + ":  %dms", loadPerfData.loadTime);
+        results.push(loadPerfData.loadTime);
+    }
+
+    results.sort(function(a, b) {
+        return a - b;
+    });
+    var median = results[~~(results.length / 2)];
+    echo("");
+    echo("  Load Performance median:  %dms", median);
+    echo("");
+}
+
+target.perf = function() {
+    downloadMultifilesTestTarget(function() {
+        createConfigForPerformanceTest();
+
+        loadPerformance();
+
+        runPerformanceTest(
+            "Single File:",
+            "tests/performance/jshint.js",
+            PERF_MULTIPLIER,
+            function() {
+                // Count test target files.
+                var count = glob.sync(
+                    process.platform === "win32"
+                        ? PERF_MULTIFILES_TARGETS.slice(2).replace("\\", "/")
+                        : PERF_MULTIFILES_TARGETS
+                ).length;
+
+                runPerformanceTest(
+                    "Multi Files (" + count + " files):",
+                    PERF_MULTIFILES_TARGETS,
+                    3 * PERF_MULTIPLIER,
+                    function() {}
+                );
+            }
+        );
+    });
 };
 
-target.patch = function() {
-    release("patch");
+target.release = function() {
+    release();
 };
 
-target.minor = function() {
-    release("minor");
-};
-
-target.major = function() {
-    release("major");
+target.prerelease = function(args) {
+    prerelease(args[0]);
 };

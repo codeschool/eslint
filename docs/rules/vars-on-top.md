@@ -9,8 +9,6 @@ This rule forces the programmer to represent that behaviour by manually moving t
 This rule aims to keep all variable declarations in the leading series of statements.
 Allowing multiple declarations helps promote maintainability and is thus allowed.
 
-### Examples
-
 The following patterns are considered problems:
 
 ```js
@@ -22,17 +20,17 @@ function doSomething() {
     if (true) {
         first = true;
     }
-    var second;                 /*error All "var" declarations must be at the top of the function scope.*/
+    var second;
 }
 
 // Variable declaration in for initializer:
 function doSomething() {
-    for (var i=0; i<10; i++) {} /*error All "var" declarations must be at the top of the function scope.*/
+    for (var i=0; i<10; i++) {}
 }
 
 // Variables after other statements:
 f();
-var a;                          /*error All "var" declarations must be at the top of the function scope.*/
+var a;
 ```
 
 The following patterns are not considered problems:

@@ -8,6 +8,8 @@ whereas Linux and Unix use a simple _line feed_ (LF). The corresponding _control
 
 Many versioning systems (like git and subversion) can automatically ensure the correct ending. However to cover all contingencies you can activate this rule.
 
+**Fixable:** This rule is automatically fixable using the `--fix` flag on the command line.
+
 ## Rule Details
 
 This rule aims to ensure having consistent line endings independent of operating system, VCS or editor used.
@@ -17,21 +19,21 @@ The following patterns are considered problems:
 ```js
 /*eslint linebreak-style: 2*/
 
-var a = 'a', // \r\n /*error Expected linebreaks to be 'LF' but found 'CRLF'.*/
+var a = 'a', // \r\n
     b = 'b'; // \n
 ```
 
 ```js
 /*eslint linebreak-style: [2, "unix"]*/
 
-var a = 'a'; // \r\n /*error Expected linebreaks to be 'LF' but found 'CRLF'.*/
+var a = 'a'; // \r\n
 
 ```
 
 ```js
 /*eslint linebreak-style: [2, "windows"]*/
 
-var a = 'a';// \n    /*error Expected linebreaks to be 'CRLF' but found 'LF'.*/
+var a = 'a';// \n
 ```
 
 The following patterns are not considered problems:
@@ -58,7 +60,7 @@ function foo(params) { // \r\n
 } // \r\n
 ```
 
-### Options
+## Options
 
 This rule may take one option which is either `unix` (LF) or `windows` (CRLF). When omitted `unix` is assumed.
 

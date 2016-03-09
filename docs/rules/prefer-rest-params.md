@@ -1,9 +1,9 @@
 # Suggest using the rest parameters instead of `arguments` (prefer-rest-params)
 
-There is rest parameters in ES2015.
-We can use that feature for variadic functions instead of `arguments` variable.
+There are rest parameters in ES2015.
+We can use that feature for variadic functions instead of the `arguments` variable.
 
-`arguments` does not have methods of `Array.prototype`, so it's inconvenience a bit.
+`arguments` does not have methods of `Array.prototype`, so it's a bit of an inconvenience.
 
 ## Rule Details
 
@@ -13,16 +13,16 @@ The following patterns are considered problems:
 
 ```js
 function foo() {
-    console.log(arguments);                 /*error Use the rest parameters instead of "arguments". */
+    console.log(arguments);
 }
 
 function foo(action) {
-    var args = [].slice.call(arguments, 1); /*error Use the rest parameters instead of "arguments". */
+    var args = [].slice.call(arguments, 1);
     action.apply(null, args);
 }
 ```
 
-The following patterns are considered not problems:
+The following patterns are not considered problems:
 
 ```js
 function foo(...args) {
@@ -30,7 +30,7 @@ function foo(...args) {
 }
 
 function foo(action, ...args) {
-    action.apply(null, args); // or `action(...args)`, related with the `prefer-spread` rule.
+    action.apply(null, args); // or `action(...args)`, related to the `prefer-spread` rule.
 }
 
 // Note: the implicit arguments can be overwritten.
@@ -49,6 +49,6 @@ This rule should not be used in ES3/5 environments.
 
 In ES2015 (ES6) or later, if you don't want to be notified about `arguments` variables, then it's safe to disable this rule.
 
-## Related rules
+## Related Rules
 
 * [prefer-spread](prefer-spread.md)

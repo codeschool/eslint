@@ -20,14 +20,20 @@ The problem is when these developers work together in a project. This rule enfor
 ## Rule Details
 
 This rule enforces a coding style where empty newlines are required or disallowed after `var`, `let`, or `const` statements to achieve a consistent coding style across the project.
-Invalid option value (anything other than `always` nor `never`), defaults to `always`.
+
+## Options
+
+This rule takes one option, a string, which can be:
+
+* `"always"` enforces empty newlines after `var`, `let` or `const` (default)
+* `"never"` disallows empty newlines after `var`, `let` or `const`
 
 The following patterns are considered problems:
 
 ```js
 /*eslint newline-after-var: [2, "always"]*/
 
-var greet = "hello,",      /*error Expected blank line after variable declarations.*/
+var greet = "hello,",
     name = "world";
 console.log(greet, name);
 ```
@@ -36,7 +42,7 @@ console.log(greet, name);
 /*eslint newline-after-var: [2, "never"]*/
 /*eslint-env es6*/
 
-let greet = "hello,",     /*error Unexpected blank line after variable declarations.*/
+let greet = "hello,",
     name = "world";
 
 console.log(greet, name);
@@ -47,7 +53,7 @@ console.log(greet, name);
 /*eslint-env es6*/
 
 var greet = "hello,";
-const NAME = "world";      /*error Expected blank line after variable declarations.*/
+const NAME = "world";
 console.log(greet, NAME);
 ```
 
@@ -90,14 +96,14 @@ The following patterns are considered problems:
 /*eslint newline-after-var: [2, "always"]*/
 
 var greet = "hello,";
-var name = "world";             /*error Expected blank line after variable declarations.*/
+var name = "world";
 // var name = require("world");
 console.log(greet, name);
 
 
 /*eslint-disable camelcase*/
 var greet = "hello,";
-var target_name = "world";      /*error Expected blank line after variable declarations.*/
+var target_name = "world";
 /*eslint-enable camelcase*/
 console.log(greet, name);
 ```

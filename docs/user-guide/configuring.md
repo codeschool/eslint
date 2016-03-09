@@ -15,14 +15,15 @@ All of these options give you fine-grained control over how ESLint treats your c
 
 ## Specifying Parser Options
 
-ESLint allows you to specify the JavaScript language options you want to support. By default, ESLint supports only ECMAScript 5 syntax. You can override that setting to enable support for ECMAScript 6 as well as [JSX](http://facebook.github.io/jsx/) by using parser options.
+ESLint allows you to specify the JavaScript language options you want to support. By default, ESLint supports only ECMAScript 5 syntax. You can override that setting to enable support for ECMAScript 6 and 7 as well as [JSX](http://facebook.github.io/jsx/) by using parser options.
 
 Parser options are set in your `.eslintrc.*` file by using the `parserOptions` property. The available options are:
 
-* `ecmaVersion` - set to 3, 5 (default), or 6 to specify the version of ECMAScript you want to use.
+* `ecmaVersion` - set to 3, 5 (default), 6, or 7 to specify the version of ECMAScript you want to use.
 * `sourceType` - set to `"script"` (default) or `"module"` if your code is in ECMAScript modules.
 * `ecmaFeatures` - an object indicating which additional language features you'd like to use:
     * `globalReturn` - allow `return` statements in the global scope
+    * `impliedStrict` - enable global [strict mode](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode) (if `ecmaVersion` is 5 or greater)
     * `jsx` - enable [JSX](http://facebook.github.io/jsx/)
     * `experimentalObjectRestSpread` - enable support for the experimental [object rest/spread properties](https://github.com/sebmarkbage/ecmascript-rest-spread) (**IMPORTANT:** This is an experimental feature that may change significantly in the future. It's recommended that you do *not* write rules relying on this functionality unless you are willing to incur maintenance cost when it changes.)
 
@@ -61,7 +62,7 @@ To indicate the npm module to use as your parser, specify it using the `parser` 
 {
     "parser": "esprima",
     "rules": {
-        "semi": 2
+        "semi": "error"
     }
 }
 ```
@@ -69,7 +70,6 @@ To indicate the npm module to use as your parser, specify it using the `parser` 
 The following parsers are compatible with ESLint:
 
 * [Esprima](https://npmjs.com/package/esprima)
-* [Esprima-FB](https://npmjs.com/package/esprima-fb) - Facebook's fork of Esprima that includes their proprietary syntax additions.
 * [Babel-ESLint](https://npmjs.com/package/babel-eslint) - A wrapper around the [Babel](http://babeljs.io) parser that makes it compatible with ESLint.
 
 Note when using a custom parser, the `parserOptions` configuration property is still required for ESLint to work properly with features not in ECMAScript 5 by default. Parsers are all passed `parserOptions` and may or may not use them to determine which features to enable.
@@ -81,6 +81,8 @@ An environment defines global variables that are predefined. The available envir
 * `browser` - browser global variables.
 * `node` - Node.js global variables and Node.js scoping.
 * `commonjs` - CommonJS global variables and CommonJS scoping (use this for browser-only code that uses Browserify/WebPack).
+* `shared-node-browser` - Globals common to both Node and Browser.
+* `es6` - enable all ECMAScript 6 features except for modules.
 * `worker` - web workers global variables.
 * `amd` - defines `require()` and `define()` as global variables as per the [amd](https://github.com/amdjs/amdjs-api/wiki/AMD) spec.
 * `mocha` - adds all of the Mocha testing global variables.
@@ -97,9 +99,9 @@ An environment defines global variables that are predefined. The available envir
 * `applescript` - AppleScript global variables.
 * `nashorn` - Java 8 Nashorn global variables.
 * `serviceworker` - Service Worker global variables.
+* `atomtest` - Atom test helper globals.
 * `embertest` - Ember test helper globals.
 * `webextensions` - WebExtensions globals.
-* `es6` - enable all ECMAScript 6 features except for modules.
 * `greasemonkey` - GreaseMonkey globals.
 
 These environments are not mutually exclusive, so you can define more than one at a time.
@@ -147,6 +149,42 @@ And in YAML:
   env:
     browser: true
     node: true
+```
+
+If you want to use an environment from a plugin, be sure to specify the plugin name in the `plugins` array and the use the unprefixed plugin name, followed by a slash, followed by the environment name. For example:
+
+```json
+{
+    "plugins": ["example"],
+    "env": {
+        "example/custom": true
+    }
+}
+```
+
+Or in a `package.json` file
+
+```json
+{
+    "name": "mypackage",
+    "version": "0.0.1",
+    "eslintConfig": {
+        "plugins": ["example"],
+        "env": {
+            "example/custom": true
+        }
+    }
+}
+```
+
+And in YAML:
+
+```yaml
+---
+  plugins:
+    - example
+  env:
+    example/custom: true
 ```
 
 ## Specifying Globals
@@ -217,23 +255,31 @@ And in YAML:
 
 ESLint comes with a large number of rules. You can modify which rules your project uses either using configuration comments or configuration files. To change a rule setting, you must set the rule ID equal to one of these values:
 
-* 0 - turn the rule off
-* 1 - turn the rule on as a warning (doesn't affect exit code)
-* 2 - turn the rule on as an error (exit code is 1 when triggered)
+* `"off"` or `0` - turn the rule off
+* `"warn"` or `1` - turn the rule on as a warning (doesn't affect exit code)
+* `"error"` or `2` - turn the rule on as an error (exit code is 1 when triggered)
 
 To configure rules inside of a file using configuration comments, use a comment in the following format:
 
 ```js
-/*eslint eqeqeq:0, curly: 2*/
+/*eslint eqeqeq: "off", curly: "error"*/
 ```
 
-In this example, [`eqeqeq`](../rules/eqeqeq) is turned off and [`curly`](../rules/curly) is turned on as an error. If a rule has additional options, you can specify them using array literal syntax, such as:
+In this example, [`eqeqeq`](../rules/eqeqeq) is turned off and [`curly`](../rules/curly) is turned on as an error. You can also use the numeric equivalent for the rule severity:
 
 ```js
-/*eslint quotes: [2, "double"], curly: 2*/
+/*eslint eqeqeq: 0, curly: 2*/
 ```
 
-This comment specifies the "double" option for the [`quotes`](../rules/quotes) rule.
+This example is the same as the last example, only it uses the numeric codes instead of the string values. The `eqeqeq` rule is off and the `curly` rule is set to be an error.
+
+If a rule has additional options, you can specify them using array literal syntax, such as:
+
+```js
+/*eslint quotes: ["error", "double"], curly: 2*/
+```
+
+This comment specifies the "double" option for the [`quotes`](../rules/quotes) rule. The first item in the array is always the rule severity (number or string).
 
 To configure rules inside of a configuration file, use the `rules` key along with an error level and any options you want to use. For example:
 
@@ -241,9 +287,9 @@ To configure rules inside of a configuration file, use the `rules` key along wit
 ```json
 {
     "rules": {
-        "eqeqeq": 0,
-        "curly": 2,
-        "quotes": [2, "double"]
+        "eqeqeq": "off",
+        "curly": "error",
+        "quotes": ["error", "double"]
     }
 }
 ```
@@ -252,12 +298,12 @@ And in YAML:
 
 ```yaml
 ---
-  rules:
-    eqeqeq: 0
-    curly: 2
-    quotes:
-      - 2
-      - "double"
+rules:
+  eqeqeq: off
+  curly: error
+  quotes:
+    - error
+    - double
 ```
 
 To configure a rule which is defined within a plugin you have to prefix the rule ID with the plugin name and a `/`. For example:
@@ -268,10 +314,10 @@ To configure a rule which is defined within a plugin you have to prefix the rule
         "plugin1"
     ],
     "rules": {
-        "eqeqeq": 0,
-        "curly": 2,
-        "quotes": [2, "double"],
-        "plugin1/rule1": 2
+        "eqeqeq": "off",
+        "curly": "error",
+        "quotes": ["error", "double"],
+        "plugin1/rule1": "error"
     }
 }
 ```
@@ -280,39 +326,37 @@ And in YAML:
 
 ```yaml
 ---
-  plugins:
-    - plugin1
-  rules:
-    eqeqeq: 0
-    curly: 2
-    quotes:
-      - 2
-      - "double"
-    plugin1/rule1: 2
+plugins:
+  - plugin1
+rules:
+  eqeqeq: 0
+  curly: error
+  quotes:
+    - error
+    - "double"
+  plugin1/rule1: error
 ```
 
 In these configuration files, the rule `plugin1/rule1` comes from the plugin named `plugin1`. You can also use this format with configuration comments, such as:
 
 ```js
-/*eslint "plugin1/rule1": 2*/
+/*eslint "plugin1/rule1": "error" */
 ```
 
 **Note:** When specifying rules from plugins, make sure to omit `eslint-plugin-`. ESLint uses only the unprefixed name internally to locate rules.
 
-All rules that are enabled by default are set to 2, so they will cause a non-zero exit code when encountered. You can lower these rules to a warning by setting them to 1, which has the effect of outputting the message onto the console but doesn't affect the exit code.
-
-To temporary disable warnings in your file use the following format:
+To temporarily disable rule warnings in your file use the following format:
 
 ```js
 /*eslint-disable */
 
-//suppress all warnings between comments
+//Disable all rules between comments
 alert('foo');
 
 /*eslint-enable */
 ```
 
-You can also disable and enable back warnings of specific rules
+You can also disable or enable warnings for specific rules:
 
 ```js
 /*eslint-disable no-alert, no-console */
@@ -323,17 +367,34 @@ console.log('bar');
 /*eslint-enable no-alert */
 ```
 
-To disable warnings on a specific line
+To disable all rules on a specific line:
 
 ```js
 alert('foo'); // eslint-disable-line
+
+// eslint-disable-next-line
+alert('foo');
 ```
 
-To disable a specific rule on a specific line
+To disable a specific rule on a specific line:
 
 ```js
 alert('foo'); // eslint-disable-line no-alert
+
+// eslint-disable-next-line no-alert
+alert('foo');
 ```
+
+To disable multiple rules on a specific line:
+
+```js
+alert('foo'); // eslint-disable-line no-alert, quotes, semi
+
+// eslint-disable-next-line no-alert, quotes, semi
+alert('foo');
+```
+
+**Note:** Comments that disable warnings for a portion of a file tell ESLint not to report rule violations for the disabled code. ESLint parses the entire file, so disabled code still needs to be syntactically valid JavaScript.
 
 ## Adding Shared Settings
 
@@ -502,7 +563,7 @@ Configurations may also be provided as an array, with additional files overridin
 
     "rules": {
         // Override any settings from the "parent" configuration
-        "eqeqeq": 1
+        "eqeqeq": "warn"
     }
 }
 ```
@@ -517,7 +578,7 @@ You can also extend configurations using shareable configuration packages. To do
 
     "rules": {
         // Override any settings from the "parent" configuration
-        "eqeqeq": 1
+        "eqeqeq": "warn"
     }
 }
 ```
@@ -525,6 +586,25 @@ You can also extend configurations using shareable configuration packages. To do
 In this example, the `eslint-config-myrules` package will be loaded as an object and used as the parent of this configuration.
 
 **Note:** You can omit `eslint-config-` and ESLint will automatically insert it for you, similar to how plugins work. See [Shareable Configs](../developer-guide/shareable-configs) for more information.
+
+ESLint also supports extending configuration from plugins that provide configs:
+
+```js
+{
+    "extends": "plugin:eslint-plugin-myplugin/myConfig",
+
+    "rules": {
+        // Override any settings from the "parent" configuration
+        "eqeqeq": "warn"
+    }
+}
+```
+
+In this example, the `eslint-plugin-myplugin` package contains configuration named `default`.
+
+**Important:** When you are extending from the configuration bundled with plugins, you need to start with `plugin:` prefix as well as specify configuration name after the slash. You may optionally omit the `eslint-plugin-` prefix.
+
+**Note:** For configuration files in your home directory, or in any path that isn't an ancestor to the location of ESLint (either globally or locally), `extends` is resolved from the path of the project using ESLint (typically the current working directory) rather than relative to the file itself.
 
 ## Comments in Configuration Files
 
@@ -537,11 +617,15 @@ Both the JSON and YAML configuration file formats support comments (`package.jso
     },
     "rules": {
         // Override our default settings just for this directory
-        "eqeqeq": 1,
-        "strict": 0
+        "eqeqeq": "warn",
+        "strict": "off"
     }
 }
 ```
+
+## Specifying File extensions to Lint
+
+Currently the sole method for telling ESLint which file extensions to lint is by specifying a comma separated list of extensions using the [`--ext`](./command-line-interface#ext) command line option.
 
 ## Ignoring Files and Directories
 
@@ -553,18 +637,20 @@ You can tell ESLint to ignore specific files and directories by creating an `.es
 
 When ESLint is run, it looks in the current working directory to find an `.eslintignore` file before determining which files to lint. If this file is found, then those preferences are applied when traversing directories. Only one `.eslintignore` file can be used at a time, so `.eslintignore` files other than the one in the current working directory will not be used.
 
-Globs are matched using [minimatch](https://github.com/isaacs/minimatch), so a number of features are available:
+Globs are matched using [node-ignore](https://github.com/kaelzhang/node-ignore), so a number of features are available:
 
 * Lines beginning with `#` are treated as comments and do not affect ignore patterns.
+* Paths are relative to `.eslintignore` location or the current working directory. This also influences paths passed via `--ignore-pattern`.
+* Ignore patterns behave according to the `.gitignore` [specification](http://git-scm.com/docs/gitignore)
 * Lines preceded by `!` are negated patterns that re-include a pattern that was ignored by an earlier pattern.
 * Brace expansion can refer to multiple files in a pattern. For example, `file.{js,ts,coffee}` will ignore `file.js`, `file.ts`, and `file.coffee`.
 
-In addition to any patterns in a `.eslintignore` file, ESLint always ignores files in `node_modules/**` and `bower_components/**`.
+In addition to any patterns in a `.eslintignore` file, ESLint always ignores files in `/node_modules/**` and `/bower_components/**`.
 
 For example, placing the following `.eslintignore` file in the current working directory will ignore all of `node_modules`, `bower_components`, any files with the extensions `.ts.js` or `.coffee.js` extension that might have been transpiled, and anything in the `build/` directory except `build/index.js`:
 
 ```text
-# node_modules and bower_components ignored by default
+# /node_modules and /bower_components ignored by default
 
 # Ignore files compiled from TypeScript and CoffeeScript
 **/*.{ts,coffee}.js

@@ -31,23 +31,23 @@ The following patterns are considered problems:
 ```js
 /*eslint yoda: 2*/
 
-if ("red" === color) {          /*error Expected literal to be on the right side of ===.*/
+if ("red" === color) {
     // ...
 }
 
-if (true == flag) {             /*error Expected literal to be on the right side of ==.*/
+if (true == flag) {
     // ...
 }
 
-if (5 > count) {                /*error Expected literal to be on the right side of >.*/
+if (5 > count) {
     // ...
 }
 
-if (-1 < str.indexOf(substr)) { /*error Expected literal to be on the right side of <.*/
+if (-1 < str.indexOf(substr)) {
     // ...
 }
 
-if (0 <= x && x < 1) {          /*error Expected literal to be on the right side of <=.*/
+if (0 <= x && x < 1) {
     // ...
 }
 ```
@@ -55,7 +55,7 @@ if (0 <= x && x < 1) {          /*error Expected literal to be on the right side
 ```js
 /*eslint yoda: [2, "always"]*/
 
-if (color == "blue") { /*error Expected literal to be on the left side of ==.*/
+if (color == "blue") {
     // ...
 }
 ```
@@ -87,7 +87,7 @@ if (-1 < str.indexOf(substr)) {
 }
 ```
 
-### Options
+## Options
 
 There are a few options to the rule:
 
@@ -100,7 +100,7 @@ There are a few options to the rule:
 
 The `onlyEquality` option is a superset of `exceptRange`, thus both options are hardly useful together.
 
-#### Range Tests
+### Range Tests
 
 "Range" comparisons test whether a variable is inside or outside the range between two literals. When configured with the `exceptRange` option, range tests are allowed when the comparison itself is wrapped directly in parentheses, such as those of an `if` or `while` condition.
 
@@ -130,7 +130,7 @@ function howLong(arr) {
 }
 ```
 
-#### Apply only to equality, but not other operators
+### Apply only to equality, but not other operators
 
 Some developers might prefer to only enforce the rule for the equality operators `==` and `===`, and not showing any warnings for any code around other operators. With `onlyEquality` option, these patterns will not be considered problems:
 

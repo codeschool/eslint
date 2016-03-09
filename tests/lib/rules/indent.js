@@ -50,7 +50,6 @@ function expectedErrors(indentType, errors) {
 
 var ruleTester = new RuleTester();
 ruleTester.run("indent", rule, {
-
     valid: [
         {
             code:
@@ -761,11 +760,29 @@ ruleTester.run("indent", rule, {
         {
             code:
                 "var items = [\n" +
-                "    {\n" +
-                "      foo: 'bar'\n" +
-                "    }\n" +
+                "  {\n" +
+                "    foo: 'bar'\n" +
+                "  }\n" +
                 "];\n",
             options: [2, {"VariableDeclarator": 2}]
+        },
+        {
+            code:
+                "const a = 1,\n" +
+                "      b = 2;\n" +
+                "const items1 = [\n" +
+                "  {\n" +
+                "    foo: 'bar'\n" +
+                "  }\n" +
+                "];\n" +
+                "const items2 = Items(\n" +
+                "  {\n" +
+                "    foo: 'bar'\n" +
+                "  }\n" +
+                ");\n",
+            options: [2, {"VariableDeclarator": 3}],
+            parserOptions: { ecmaVersion: 6 }
+
         },
         {
             code:
@@ -998,6 +1015,107 @@ ruleTester.run("indent", rule, {
             "}",
             options: [4, {"VariableDeclarator": 1, "SwitchCase": 1}],
             parserOptions: { ecmaVersion: 6 }
+        },
+        {
+            code:
+            "var a = {\n" +
+            "  some: 1\n" +
+            ", name: 2\n" +
+            "};\n",
+            options: [2]
+        },
+        {
+            code:
+            "a.c = {\n" +
+            "    aa: function() {\n" +
+            "        'test1';\n" +
+            "        return 'aa';\n" +
+            "    }\n" +
+            "    , bb: function() {\n" +
+            "        return this.bb();\n" +
+            "    }\n" +
+            "};\n",
+            options: [4]
+        },
+        {
+            code:
+            "var a =\n" +
+            "{\n" +
+            "    actions:\n" +
+            "    [\n" +
+            "        {\n" +
+            "            name: 'compile'\n" +
+            "        }\n" +
+            "    ]\n" +
+            "};\n",
+            options: [4, {"VariableDeclarator": 0, "SwitchCase": 1}]
+        },
+        {
+            code:
+            "var a =\n" +
+            "[\n" +
+            "    {\n" +
+            "        name: 'compile'\n" +
+            "    }\n" +
+            "];\n",
+            options: [4, {"VariableDeclarator": 0, "SwitchCase": 1}]
+        },
+        {
+            code:
+            "const func = function (opts) {\n" +
+            "    return Promise.resolve()\n" +
+            "    .then(() => {\n" +
+            "        [\n" +
+            "            'ONE', 'TWO'\n" +
+            "        ].forEach(command => { doSomething(); });\n" +
+            "    });\n" +
+            "};",
+            parserOptions: { ecmaVersion: 6 },
+            options: [4]
+        },
+        {
+            code:
+            "var haveFun = function () {\n" +
+            "    SillyFunction(\n" +
+            "        {\n" +
+            "            value: true,\n" +
+            "        },\n" +
+            "        {\n" +
+            "            _id: true,\n" +
+            "        }\n" +
+            "    );\n" +
+            "};",
+            options: [4]
+        },
+        {
+            code:
+            "var haveFun = function () {\n" +
+            "    new SillyFunction(\n" +
+            "        {\n" +
+            "            value: true,\n" +
+            "        },\n" +
+            "        {\n" +
+            "            _id: true,\n" +
+            "        }\n" +
+            "    );\n" +
+            "};",
+            options: [4]
+        },
+        {
+            code:
+            "let object1 = {\n" +
+            "  doThing() {\n" +
+            "    return _.chain([])\n" +
+            "      .map(v => (\n" +
+            "        {\n" +
+            "          value: true,\n" +
+            "        }\n" +
+            "      ))\n" +
+            "      .value();\n" +
+            "  }\n" +
+            "};",
+            parserOptions: { ecmaVersion: 6 },
+            options: [2]
         }
     ],
     invalid: [
@@ -1846,6 +1964,68 @@ ruleTester.run("indent", rule, {
             options: [2, {"VariableDeclarator": 2, "SwitchCase": 1}],
             parserOptions: { ecmaVersion: 6 },
             errors: expectedErrors([[3, 6, 4, "MethodDefinition"]])
+        },
+        {
+            code:
+            "{\n" +
+            "    if(a){\n" +
+            "        foo();\n" +
+            "    }\n" +
+            "  else{\n" +
+            "        bar();\n" +
+            "    }\n" +
+            "}\n",
+            output:
+            "{\n" +
+            "    if(a){\n" +
+            "        foo();\n" +
+            "    }\n" +
+            "    else{\n" +
+            "        bar();\n" +
+            "    }\n" +
+            "}\n",
+            options: [4],
+            errors: expectedErrors([[5, 4, 2, "Keyword"]])
+        },
+        {
+            code:
+            "{\n" +
+            "    if(a){\n" +
+            "        foo();\n" +
+            "    }\n" +
+            "  else\n" +
+            "        bar();\n" +
+            "    \n" +
+            "}\n",
+            output:
+            "{\n" +
+            "    if(a){\n" +
+            "        foo();\n" +
+            "    }\n" +
+            "    else\n" +
+            "        bar();\n" +
+            "    \n" +
+            "}\n",
+            options: [4],
+            errors: expectedErrors([[5, 4, 2, "Keyword"]])
+        },
+        {
+            code:
+            "{\n" +
+            "    if(a)\n" +
+            "        foo();\n" +
+            "  else\n" +
+            "        bar();\n" +
+            "}\n",
+            output:
+            "{\n" +
+            "    if(a)\n" +
+            "        foo();\n" +
+            "    else\n" +
+            "        bar();\n" +
+            "}\n",
+            options: [4],
+            errors: expectedErrors([[4, 4, 2, "Keyword"]])
         }
     ]
 });

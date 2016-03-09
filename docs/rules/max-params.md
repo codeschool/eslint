@@ -17,7 +17,7 @@ The following patterns are considered problems:
 ```js
 /*eslint max-params: [2, 3]*/
 
-function foo (bar, baz, qux, qxx) { /*error This function has too many parameters (4). Maximum allowed is 3.*/
+function foo (bar, baz, qux, qxx) {
     doSomething();
 }
 ```
@@ -31,6 +31,19 @@ function foo (bar, baz, qux) {
     doSomething();
 }
 ```
+
+Optionally, you may specify a `maximum` object property:
+
+```json
+"max-params": [2, 2]
+```
+
+is equivalent to
+
+```json
+"max-params": [2, {"maximum": 2}]
+```
+
 
 ## Related Rules
 

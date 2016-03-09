@@ -15,7 +15,7 @@ var isYes = answer === 1;
 var isNo = answer === 1 ? false : true;
 
 // Good
-var isYes = answer !== 1;
+var isNo = answer !== 1;
 ```
 
 This rule disallows the use of 'Boolean' literals inside conditional expressions.
@@ -42,9 +42,9 @@ The following patterns are considered problems:
 ```js
 /*eslint no-unneeded-ternary: 2*/
 
-var a = x === 2 ? true : false; /*error Unnecessary use of boolean literals in conditional expression*/
+var a = x === 2 ? true : false;
 
-var a = x ? true : false;       /*error Unnecessary use of boolean literals in conditional expression*/
+var a = x ? true : false;
 ```
 
 The following pattern is considered a warning when `defaultAssignment` is `false`:
@@ -73,11 +73,11 @@ The following pattern is not considered a warning when `defaultAssignment` is `t
 var a = x ? x : 1;
 ```
 
+## When Not To Use It
+
+You can turn this rule off if you are not concerned with unnecessary complexity in conditional expressions.
+
 ## Related Rules
 
 * [no-ternary](no-ternary.md)
 * [no-nested-ternary](no-nested-ternary.md)
-
-## When Not To Use It
-
-You can turn this rule off if you are not concerned with unnecessary complexity in conditional expressions.

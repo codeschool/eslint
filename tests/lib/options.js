@@ -266,6 +266,12 @@ describe("options", function() {
             var currentOptions = options.parse("");
             assert.equal(currentOptions.maxWarnings, -1);
         });
+
+        it("should throw an error when supplied with a non-integer", function() {
+            assert.throws(function() {
+                options.parse("--max-warnings 10.2");
+            }, /Invalid value for option 'max-warnings' - expected type Int/);
+        });
     });
 
     describe("--init", function() {
@@ -310,6 +316,13 @@ describe("options", function() {
         it("should return a espree if --parser is not passed", function() {
             var currentOptions = options.parse("");
             assert.equal(currentOptions.parser, "espree");
+        });
+    });
+
+    describe("--print-config", function() {
+        it("should return true when passed --print-config", function() {
+            var currentOptions = options.parse("--print-config");
+            assert.isTrue(currentOptions.printConfig);
         });
     });
 });

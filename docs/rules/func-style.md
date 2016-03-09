@@ -46,28 +46,64 @@ Due to these different behaviors, it is common to have guidelines as to which st
 
 This rule is aimed at enforcing a particular type of function style throughout a JavaScript file, either declarations or expressions. You can specify which you prefer in the configuration.
 
+## Options
+
+### "expression"
+
+This is the default configuration.  It reports an error when function declarations are used instead of function expressions.
+
+```json
+"func-style": [2, "expression"]
+```
+
+The following patterns are considered problems:
+
+```js
+/*eslint func-style: [2, "expression"]*/
+
+function foo() {
+    // ...
+}
+```
+
+The following patterns are not considered problems:
+
+```js
+/*eslint func-style: [2, "expression"]*/
+
+var foo = function() {
+    // ...
+};
+```
+
+### "declaration"
+
+This reports an error if any function expressions are used where function declarations are expected. You can specify to use expressions instead:
+
+```json
+"func-style": [2, "declaration"]
+```
+
+An additional option object can be added with a property `"allowArrowFunctions"`.  Setting this to `true` will allow arrow functions.
+
+```json
+"func-style": [2, "declaration", { "allowArrowFunctions": true }]
+```
+
 The following patterns are considered problems:
 
 ```js
 /*eslint func-style: [2, "declaration"]*/
 
-var foo = function() {  /*error Expected a function declaration.*/
+var foo = function() {
     // ...
 };
 ```
 
 ```js
-/*eslint func-style: [2, "expression"]*/
-
-function foo() {  /*error Expected a function expression.*/
-    // ...
-}
-```
-
-```js
 /*eslint func-style: [2, "declaration"]*/
 
-var foo = () => {};  /*error Expected a function declaration.*/
+var foo = () => {};
 ```
 
 The following patterns are not considered problems:
@@ -86,39 +122,11 @@ SomeObject.foo = function() {
 ```
 
 ```js
-/*eslint func-style: [2, "expression"]*/
-
-var foo = function() {
-    // ...
-};
-```
-
-```js
 /*eslint func-style: [2, "declaration", { "allowArrowFunctions": true }]*/
 
 var foo = () => {};
 ```
 
-
-### Options
-
-```json
-"func-style": [2, "declaration"]
-```
-
-This reports an error if any function expressions are used where function declarations are expected. You can specify to use expressions instead:
-
-```json
-"func-style": [2, "expression"]
-```
-
-This configuration reports an error when function declarations are used instead of function expressions.
-
-```json
-"func-style": [2, "expression", { "allowArrowFunctions": true }]
-```
-
-This configuration works as expression setting works but does not check for arrow functions.
 
 ## When Not To Use It
 

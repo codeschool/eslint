@@ -13,8 +13,8 @@ The following patterns are considered problems:
 
 // spaces, tabs and unicode whitespaces
 // are not allowed at the end of lines
-var foo = 0;//•••••  /*error Trailing spaces not allowed.*/
-var baz = 5;//••     /*error Trailing spaces not allowed.*/
+var foo = 0;//•••••
+var baz = 5;//••
 ```
 
 The following patterns are not considered problems:
@@ -27,7 +27,7 @@ var foo = 0;
 var baz = 5;
 ```
 
-### Options
+## Options
 
 There is one option for this rule, `skipBlankLines`. When set to true, the rule will not flag any lines that are made up purely of whitespace. In short, if a line is zero-length after being trimmed of whitespace, then the rule will not flag that line when `skipBlankLines` is enabled.
 

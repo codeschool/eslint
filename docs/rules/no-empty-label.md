@@ -1,5 +1,7 @@
 # No empty labels (no-empty-label)
 
+**Replacement notice**: This rule was removed in ESLint v2.0 and replaced by [no-labels](no-labels.md) rule.
+
 Labeled statements are only used in conjunction with labeled break and continue statements. ECMAScript has no goto statement.
 
 
@@ -12,7 +14,7 @@ The following patterns are considered problems:
 ```js
 /*eslint no-empty-label: 2*/
 
-labeled:     /*error Unexpected label "labeled"*/
+labeled:
 var x = 10;
 ```
 
@@ -26,3 +28,13 @@ for (var i=10; i; i--) {
     // ...
 }
 ```
+
+## When Not To Use It
+
+If you don't want to be notified about usage of labels, then it's safe to disable this rule.
+
+## Related Rules
+
+* [no-labels](./no-labels.md)
+* [no-label-var](./no-label-var.md)
+* [no-unused-labels](./no-unused-labels.md)

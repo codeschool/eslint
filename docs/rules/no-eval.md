@@ -19,29 +19,29 @@ The following patterns are considered problems:
 
 var obj = { x: "foo" },
     key = "x",
-    value = eval("obj." + key); /*error eval can be harmful.*/
+    value = eval("obj." + key);
 
-(0, eval)("var a = 0");         /*error eval can be harmful.*/
+(0, eval)("var a = 0");
 
-var foo = eval;                 /*error eval can be harmful.*/
+var foo = eval;
 foo("var a = 0");
 
 // This `this` is the global object.
-this.eval("var a = 0");         /*error eval can be harmful.*/
+this.eval("var a = 0");
 ```
 
 ```js
 /*eslint no-eval: 2*/
 /*eslint-env browser*/
 
-window.eval("var a = 0"); /*error eval can be harmful.*/
+window.eval("var a = 0");
 ```
 
 ```js
 /*eslint no-eval: 2*/
 /*eslint-env node*/
 
-global.eval("var a = 0"); /*error eval can be harmful.*/
+global.eval("var a = 0");
 ```
 
 The following patterns are not considered problems:
@@ -64,7 +64,7 @@ class A {
 }
 ```
 
-### Options
+## Options
 
 This rule has an option to allow indirect calls to `eval`.
 Indirect calls to `eval` are less dangerous than direct calls to `eval` because they cannot dynamically change the scope. Because of this, they also will not negatively impact performance to the degree of direct `eval`.
@@ -82,7 +82,7 @@ With this option the following patterns are considered problems:
 
 var obj = { x: "foo" },
     key = "x",
-    value = eval("obj." + key); /*error eval can be harmful.*/
+    value = eval("obj." + key);
 ```
 
 With this option the following patterns are not considered problems:
@@ -112,7 +112,7 @@ window.eval("var a = 0");
 global.eval("var a = 0");
 ```
 
-### Known Limitations
+## Known Limitations
 
 * This rule is warning every `eval()` even if the `eval` is not global's.
   This behavior is in order to detect calls of direct `eval`. Such as:
